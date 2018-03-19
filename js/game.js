@@ -65,9 +65,7 @@ function createScene() {
 		);
 
 	// Set the position of the camera
-	camera.position.x = 0;
-	camera.position.z = 200;
-	camera.position.y = 100;
+	camera.position.set( 0, 200, 300 );
     camera.lookAt( 0, 0, 0 );
 
 	// Create the renderer
@@ -146,8 +144,10 @@ function createLights() {
 var Car = function() {
 
     var direction = new THREE.Vector3(1., 0., 0.);
-    var speed = 5.;
-    var steeringAngle = Math.PI / 12;
+    var maxSpeed = 10.;
+    var acceleration = 0.25;
+    var currentSpeed = 0;
+    var steeringAngle = Math.PI / 24;
     var steeringM;
 
     var movement = {
@@ -320,8 +320,7 @@ var Car = function() {
     var matTire = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
 
     var frontLeftTire = new THREE.Mesh(geomTire, matTire);
-    frontLeftTire.rotation.z = 1.57;
-    frontLeftTire.rotation.y = 1.57;
+    frontLeftTire.rotation.x = Math.PI / 2;
     frontLeftTire.position.y = -12;
     frontLeftTire.position.z = 15;
     frontLeftTire.position.x = 20;
@@ -330,8 +329,7 @@ var Car = function() {
     this.mesh.add(frontLeftTire);
 
     var frontRightTire = new THREE.Mesh(geomTire, matTire);
-    frontRightTire.rotation.z = 1.57;
-    frontRightTire.rotation.y = 1.57;
+    frontRightTire.rotation.x = Math.PI / 2;
     frontRightTire.position.y = -12;
     frontRightTire.position.z = -15;
     frontRightTire.position.x = 20;
@@ -340,8 +338,7 @@ var Car = function() {
     this.mesh.add(frontRightTire);
 
     var backLeftTire = new THREE.Mesh(geomTire, matTire);
-    backLeftTire.rotation.z = 1.57;
-    backLeftTire.rotation.y = 1.57;
+    backLeftTire.rotation.x = Math.PI / 2;
     backLeftTire.position.y = -12;
     backLeftTire.position.z = 15;
     backLeftTire.position.x = -20;
@@ -350,8 +347,7 @@ var Car = function() {
     this.mesh.add(backLeftTire);
 
     var backRightTire = new THREE.Mesh(geomTire, matTire);
-    backRightTire.rotation.z = 1.57;
-    backRightTire.rotation.y = 1.57;
+    backRightTire.rotation.x = Math.PI / 2;
     backRightTire.position.y = -12;
     backRightTire.position.z = -15;
     backRightTire.position.x = -20;
@@ -368,19 +364,25 @@ var Car = function() {
     }
 
     this.update = function() {
+        var sign;
+        var is_moving = movement.forward || movement.backward;
+        this.mesh.position.addScaledVector(direction, currentSpeed);
         if (movement.forward) {
-            this.mesh.position.addScaledVector(direction, speed);
+            currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
+        } else if (movement.backward) {
+            currentSpeed = Math.max(-maxSpeed, currentSpeed - acceleration);
+        } else if (currentSpeed != 0){
+            sign = currentSpeed / currentSpeed;
+            currentSpeed = Math.abs(currentSpeed) - acceleration;
+            currentSpeed *= sign;
         }
-        if (movement.left) {
+        if (is_moving && movement.left) {
             direction = direction.applyMatrix3(steeringLeft);
             this.mesh.rotation.y += steeringAngle;
         }
-        if (movement.right) {
+        if (is_moving && movement.right) {
             direction = direction.applyMatrix3(steeringRight);
             this.mesh.rotation.y -= steeringAngle;
-        }
-        if (movement.backward) {
-            this.mesh.position.addScaledVector(direction, -speed);
         }
     }
 
