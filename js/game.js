@@ -26,10 +26,11 @@ function init() {
 	// add the objects
     createGround();
     createCar();
+    createFinish(300, 100);
 
     trees.push(createTree(100, -200, 1.));
     trees.push(createTree(-180, 103, .9));
-    trees.push(createTree(120, -150, .5));
+    trees.push(createTree(120, -150, .5))
     trees.push(createTree(-120, -240, .8));
     trees.push(createTree(-120, 120, 1.2));
     trees.push(createTree(120, 130, .7));
@@ -38,6 +39,12 @@ function init() {
     trees.push(createTree(-320, -40, .6));
     trees.push(createTree(-320, 120, .9));
     trees.push(createTree(220, 130, .5));
+    trees.push(createTree(0, 0, .75));
+
+    for (var i = 0; i < trees.length ; i ++) {
+//        collidableTreeMeshes.push.apply(collidableTreeMeshes, trees[i].mesh.children);
+        collidableTreeMeshes.push(trees[i].bottom);
+    }
 
     // add controls
     createControls();
@@ -49,7 +56,7 @@ function init() {
 
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
-		renderer, container, car, trees = [];
+		renderer, container, car, finish, trees = [], collidableTreeMeshes = [];
 
 function createScene() {
 	// Get the width and the height of the screen,
@@ -173,7 +180,7 @@ var Car = function() {
 
     // Create the body
 	var geomBody = new THREE.BoxGeometry(80,30,50,1,1,1);
-	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
+	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
 	var body = new THREE.Mesh(geomBody, matBody);
 	body.castShadow = true;
 	body.receiveShadow = true;
@@ -181,7 +188,7 @@ var Car = function() {
 
 	// Create the top
 	var geomRoof = new THREE.BoxGeometry(60,30,45,1,1,1);
-	var matRoof = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
+	var matRoof = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
 	var roof = new THREE.Mesh(geomRoof, matRoof);
 	roof.position.y = 30;
 	roof.castShadow = true;
@@ -190,7 +197,7 @@ var Car = function() {
 
 	// Create the bumper
 	var geomBumper = new THREE.BoxGeometry(90,10,45,1,1,1);
-	var matBumper = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+	var matBumper = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
 	var bumper = new THREE.Mesh(geomBumper, matBumper);
 	bumper.position.y = -10;
 	bumper.castShadow = true;
@@ -239,7 +246,7 @@ var Car = function() {
 
 	// Create the grate
 	var geomGrate = new THREE.BoxGeometry(5,5,15,1,1,1);
-	var matGrate = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+	var matGrate = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
     var grate = new THREE.Mesh(geomGrate, matGrate);
     grate.position.y = 5;
     grate.position.z = 0;
@@ -290,7 +297,7 @@ var Car = function() {
 
     // Create doors
     var geomDoor = new THREE.BoxGeometry(30,30,3,1,1,1);
-	var matDoor = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
+	var matDoor = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
 
 	var leftDoor = new THREE.Mesh(geomDoor, matDoor);
 	leftDoor.position.y = 0;
@@ -310,7 +317,7 @@ var Car = function() {
 
     // Create door handle
     var geomHandle = new THREE.BoxGeometry(10,3,3,1,1,1);
-	var matHandle = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+	var matHandle = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
 
 	var leftHandle = new THREE.Mesh(geomHandle, matHandle);
 	leftHandle.position.y = 8;
@@ -330,7 +337,7 @@ var Car = function() {
 
     // Create tires
     var geomTire = new THREE.CylinderGeometry(10, 10, 10, 32);
-    var matTire = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+    var matTire = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
 
     var frontLeftTire = new THREE.Mesh(geomTire, matTire);
     frontLeftTire.rotation.x = Math.PI / 2;
@@ -380,6 +387,7 @@ var Car = function() {
         var sign, R, currentAngle;
         var is_moving = currentSpeed != 0;
         this.mesh.position.addScaledVector(direction, currentSpeed);
+
         if (movement.forward) {
             currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
         } else if (movement.backward) {
@@ -401,6 +409,13 @@ var Car = function() {
             R = this.computeR(currentAngle);
             direction = direction.applyMatrix3(R);
             this.mesh.rotation.y -= currentAngle;
+        }
+
+        if (objectInBound(body, collidableTreeMeshes)) {
+            console.log('Game over')
+        }
+        if (objectInBound(body, [finish.finish])) {
+            console.log('You win')
         }
     }
 
@@ -467,7 +482,7 @@ function createGround() {
 var Tree = function() {
 
     this.mesh = new THREE.Object3D();
-    var matTree = new THREE.MeshPhongMaterial({color:Colors.green, shading:THREE.FlatShading});
+    var matTree = new THREE.MeshPhongMaterial({color:Colors.green, flatShading:true});
 
     var geomTop = new THREE.CylinderGeometry( 1, 30, 30, 4 );
     var top = new THREE.Mesh( geomTop, matTree );
@@ -484,14 +499,14 @@ var Tree = function() {
     this.mesh.add( mid );
 
     var geomBottom = new THREE.CylinderGeometry( 1, 50, 50, 4 );
-    var bottom = new THREE.Mesh( geomBottom, matTree );
+    var bottom = this.bottom = new THREE.Mesh( geomBottom, matTree );
     bottom.position.y = 40;
     bottom.castShadow = true;
     bottom.receiveShadow = true;
     this.mesh.add( bottom );
 
     var geomTrunk = new THREE.CylinderGeometry( 10, 10, 30, 32);
-    var matTrunk = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+    var matTrunk = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
     var trunk = new THREE.Mesh( geomTrunk, matTrunk );
     this.mesh.add( trunk );
 }
@@ -502,6 +517,22 @@ function createTree(x, z, scale) {
     tree.mesh.position.set( x, 0, z );
     tree.mesh.scale.set( scale, scale, scale );
     return tree;
+}
+
+var Finish = function() {
+    this.mesh = new THREE.Object3D();
+
+    var geomFinish = new THREE.BoxGeometry(50, 5, 50);
+    var matFinish = new THREE.MeshPhongMaterial({color:Colors.red, flatShading:true});
+    var finish = new THREE.Mesh( geomFinish, matFinish );
+    this.finish = finish;
+    this.mesh.add( finish );
+}
+
+function createFinish(x, z) {
+    finish = new Finish();
+    finish.mesh.position.set( x, 0, z );
+    scene.add(finish.mesh);
 }
 
 function loop(){
@@ -568,4 +599,49 @@ function createControls() {
             }
         }
     );
+}
+
+// https://stackoverflow.com/a/11480717/4855984 (doesn't work)
+function objectCollidedWith(object, collidableMeshList) {
+    for (let child of object.children) {
+        var childPosition = child.position.clone();
+        for (var vertexIndex = 0; vertexIndex < child.geometry.vertices.length; vertexIndex++) {
+            var localVertex = child.geometry.vertices[vertexIndex].clone();
+            var globalVertex = localVertex.applyMatrix4(child.matrix);
+            var directionVector = child.position.sub( globalVertex );
+
+            var ray = new THREE.Raycaster( childPosition, directionVector.clone().normalize() );
+            var collisionResults = ray.intersectObjects( collidableMeshList );
+            if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+function objectInBound(object, objectList) {
+    o = get_xywh(object);
+    for (let target of objectList) {
+        t = get_xywh(target);
+        if ( (Math.abs(o.x - t.x) * 2 < t.w + o.w) && (Math.abs(o.y - t.y) * 2 < t.h + o.h)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function get_xywh(object) {
+    var p = object.geometry.parameters;
+    var globalPosition = new THREE.Vector3( 0., 0., 0. );
+    object.getWorldPosition(globalPosition);
+    var x = globalPosition.x;
+    var y = globalPosition.z;
+    var w = p.width;
+    if (p.hasOwnProperty('radiusBottom')) {
+        w = Math.max(p.radiusTop, p.radiusBottom) * 2;
+    }
+    var h = p.height;
+    return {'x': x, 'y': y, 'w': w, 'h': h};
 }

@@ -57,7 +57,7 @@ var Car = function() {
 
     // Create the body
 	var geomBody = new THREE.BoxGeometry(80,30,50,1,1,1);
-	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
+	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
 	var body = new Physijs.BoxMesh(geomBody, matBody, 1000);
     body.position.y = 10;
     body.rotation.y = Math.PI;
@@ -69,7 +69,7 @@ var Car = function() {
 
 	// Create the top
 	var geomRoof = new THREE.BoxGeometry(60,30,45,1,1,1);
-	var matRoof = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
+	var matRoof = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
 	var roof = new THREE.Mesh(geomRoof, matRoof);
 	roof.position.y = 30;
 	roof.castShadow = true;
@@ -78,7 +78,7 @@ var Car = function() {
 
 	// Create the bumper
 	var geomBumper = new THREE.BoxGeometry(90,10,45,1,1,1);
-	var matBumper = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+	var matBumper = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
 	var bumper = new THREE.Mesh(geomBumper, matBumper);
 	bumper.position.y = -10;
 	bumper.castShadow = true;
@@ -87,7 +87,7 @@ var Car = function() {
 
 	// Create the headlights
 	var geomHeadLight = new THREE.BoxGeometry(5,5,5,1,1,1);
-	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white, shading:THREE.FlatShading});
+	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white, flatShading:true});
 
 	var headLightLeft = new THREE.Mesh(geomHeadLight, matHeadLight);
 	headLightLeft.position.y = 5;
@@ -107,7 +107,7 @@ var Car = function() {
 
 	// Create the taillights
 	var geomTailLight = new THREE.BoxGeometry(5,5,10,1,1,1);
-	var matTailLight = new THREE.MeshPhongMaterial({color:Colors.red, shading:THREE.FlatShading});
+	var matTailLight = new THREE.MeshPhongMaterial({color:Colors.red, flatShading:true});
 
 	var tailLightLeft = new THREE.Mesh(geomTailLight, matTailLight);
 	tailLightLeft.position.y = 5;
@@ -127,7 +127,7 @@ var Car = function() {
 
 	// Create the grate
 	var geomGrate = new THREE.BoxGeometry(5,5,15,1,1,1);
-	var matGrate = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+	var matGrate = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
     var grate = new THREE.Mesh(geomGrate, matGrate);
     grate.position.y = 5;
     grate.position.z = 0;
@@ -138,7 +138,7 @@ var Car = function() {
 
     // Create windshield
     var geomWindshield = new THREE.BoxGeometry(3,20,35,1,1,1);
-	var matWindshield = new THREE.MeshPhongMaterial({color:Colors.blue, shading:THREE.FlatShading});
+	var matWindshield = new THREE.MeshPhongMaterial({color:Colors.blue, flatShading:true});
 
     var windshield = new THREE.Mesh(geomWindshield, matWindshield);
     windshield.position.y = 25;
@@ -158,7 +158,7 @@ var Car = function() {
 
     // Create windows
     var geomWindow = new THREE.BoxGeometry(40,20,3,1,1,1);
-	var matWindow = new THREE.MeshPhongMaterial({color:Colors.blue, shading:THREE.FlatShading});
+	var matWindow = new THREE.MeshPhongMaterial({color:Colors.blue, flatShading:true});
 
 	var leftWindow = new THREE.Mesh(geomWindow, matWindow);
 	leftWindow.position.y = 25;
@@ -178,7 +178,7 @@ var Car = function() {
 
     // Create doors
     var geomDoor = new THREE.BoxGeometry(30,30,3,1,1,1);
-	var matDoor = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
+	var matDoor = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
 
 	var leftDoor = new THREE.Mesh(geomDoor, matDoor);
 	leftDoor.position.y = 0;
@@ -198,7 +198,7 @@ var Car = function() {
 
     // Create door handle
     var geomHandle = new THREE.BoxGeometry(10,3,3,1,1,1);
-	var matHandle = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+	var matHandle = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
 
 	var leftHandle = new THREE.Mesh(geomHandle, matHandle);
 	leftHandle.position.y = 8;
