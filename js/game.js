@@ -11,6 +11,7 @@ var Colors = {
 	pink:0xF5986E,
 	brownDark:0x23190f,
 	blue:0x68c3c0,
+    green:0x669900
 };
 
 window.addEventListener('load', init, false);
@@ -26,6 +27,18 @@ function init() {
     createGround();
     createCar();
 
+    trees.push(createTree(100, -200, 1.));
+    trees.push(createTree(-180, 103, .9));
+    trees.push(createTree(120, -150, .5));
+    trees.push(createTree(-120, -240, .8));
+    trees.push(createTree(-120, 120, 1.2));
+    trees.push(createTree(120, 130, .7));
+    trees.push(createTree(-380, 103, .5));
+    trees.push(createTree(220, -50, 1.2));
+    trees.push(createTree(-320, -40, .6));
+    trees.push(createTree(-320, 120, .9));
+    trees.push(createTree(220, 130, .5));
+
     // add controls
     createControls();
 
@@ -36,7 +49,7 @@ function init() {
 
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
-		renderer, container, car;
+		renderer, container, car, trees = [];
 
 function createScene() {
 	// Get the width and the height of the screen,
@@ -186,7 +199,7 @@ var Car = function() {
 
 	// Create the headlights
 	var geomHeadLight = new THREE.BoxGeometry(5,5,5,1,1,1);
-	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white, shading:THREE.FlatShading});
+	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white});
 
 	var headLightLeft = new THREE.Mesh(geomHeadLight, matHeadLight);
 	headLightLeft.position.y = 5;
@@ -206,7 +219,7 @@ var Car = function() {
 
 	// Create the taillights
 	var geomTailLight = new THREE.BoxGeometry(5,5,10,1,1,1);
-	var matTailLight = new THREE.MeshPhongMaterial({color:Colors.red, shading:THREE.FlatShading});
+	var matTailLight = new THREE.MeshPhongMaterial({color:Colors.red});
 
 	var tailLightLeft = new THREE.Mesh(geomTailLight, matTailLight);
 	tailLightLeft.position.y = 5;
@@ -237,7 +250,7 @@ var Car = function() {
 
     // Create windshield
     var geomWindshield = new THREE.BoxGeometry(3,20,35,1,1,1);
-	var matWindshield = new THREE.MeshPhongMaterial({color:Colors.blue, shading:THREE.FlatShading});
+	var matWindshield = new THREE.MeshPhongMaterial({color:Colors.blue});
 
     var windshield = new THREE.Mesh(geomWindshield, matWindshield);
     windshield.position.y = 25;
@@ -257,7 +270,7 @@ var Car = function() {
 
     // Create windows
     var geomWindow = new THREE.BoxGeometry(40,20,3,1,1,1);
-	var matWindow = new THREE.MeshPhongMaterial({color:Colors.blue, shading:THREE.FlatShading});
+	var matWindow = new THREE.MeshPhongMaterial({color:Colors.blue});
 
 	var leftWindow = new THREE.Mesh(geomWindow, matWindow);
 	leftWindow.position.y = 25;
@@ -430,7 +443,7 @@ var Car = function() {
 
 function createCar() {
     car = new Car();
-    car.mesh.position.y = 25;
+    car.mesh.position.set( -300, 25, -150);
     scene.add(car.mesh);
 }
 
@@ -438,8 +451,8 @@ var Ground = function() {
 
     this.mesh = new THREE.Object3D();
 
-    var matGround = new THREE.MeshPhongMaterial({color:Colors.red});
-    var geomGround = new THREE.BoxGeometry(300, 1, 300);
+    var matGround = new THREE.MeshPhongMaterial({color:Colors.green});
+    var geomGround = new THREE.BoxGeometry(1200, 1, 800);
     var ground = new THREE.Mesh(geomGround, matGround);
     ground.position.set( 0, 0, 0 );
     ground.receiveShadow = true;
@@ -449,6 +462,46 @@ var Ground = function() {
 function createGround() {
     ground = new Ground();
     scene.add(ground.mesh);
+}
+
+var Tree = function() {
+
+    this.mesh = new THREE.Object3D();
+    var matTree = new THREE.MeshPhongMaterial({color:Colors.green, shading:THREE.FlatShading});
+
+    var geomTop = new THREE.CylinderGeometry( 1, 30, 30, 4 );
+    var top = new THREE.Mesh( geomTop, matTree );
+    top.position.y = 90;
+    top.castShadow = true;
+    top.receiveShadow = true;
+    this.mesh.add( top );
+
+    var geomMid = new THREE.CylinderGeometry( 1, 40, 40, 4 );
+    var mid = new THREE.Mesh( geomMid, matTree );
+    mid.position.y = 70;
+    mid.castShadow = true;
+    mid.receiveShadow = true;
+    this.mesh.add( mid );
+
+    var geomBottom = new THREE.CylinderGeometry( 1, 50, 50, 4 );
+    var bottom = new THREE.Mesh( geomBottom, matTree );
+    bottom.position.y = 40;
+    bottom.castShadow = true;
+    bottom.receiveShadow = true;
+    this.mesh.add( bottom );
+
+    var geomTrunk = new THREE.CylinderGeometry( 10, 10, 30, 32);
+    var matTrunk = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+    var trunk = new THREE.Mesh( geomTrunk, matTrunk );
+    this.mesh.add( trunk );
+}
+
+function createTree(x, z, scale) {
+    var tree = new Tree();
+    scene.add(tree.mesh);
+    tree.mesh.position.set( x, 0, z );
+    tree.mesh.scale.set( scale, scale, scale );
+    return tree;
 }
 
 function loop(){
