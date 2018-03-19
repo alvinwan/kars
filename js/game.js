@@ -50,7 +50,7 @@ function createScene() {
 
 	// Add a fog effect to the scene; same color as the
 	// background color used in the style sheet
-	scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+	scene.fog = new THREE.Fog(0xf7d9aa, 300, 950);
 
 	// Create the camera
 	aspectRatio = WIDTH / HEIGHT;
@@ -65,7 +65,7 @@ function createScene() {
 		);
 
 	// Set the position of the camera
-	camera.position.set( 0, 200, 300 );
+	camera.position.set( 0, 300, 300 );
     camera.lookAt( 0, 0, 0 );
 
 	// Create the renderer
@@ -364,25 +364,30 @@ var Car = function() {
     }
 
     this.update = function() {
-        var sign;
-        var is_moving = movement.forward || movement.backward;
+        var sign, R, currentAngle;
+        var is_moving = currentSpeed != 0;
         this.mesh.position.addScaledVector(direction, currentSpeed);
         if (movement.forward) {
             currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
         } else if (movement.backward) {
             currentSpeed = Math.max(-maxSpeed, currentSpeed - acceleration);
-        } else if (currentSpeed != 0){
-            sign = currentSpeed / currentSpeed;
-            currentSpeed = Math.abs(currentSpeed) - acceleration;
+        }
+        if (is_moving) {
+            sign = currentSpeed / Math.abs(currentSpeed);
+            currentSpeed = Math.abs(currentSpeed) - acceleration / 1.5;
             currentSpeed *= sign;
         }
         if (is_moving && movement.left) {
-            direction = direction.applyMatrix3(steeringLeft);
-            this.mesh.rotation.y += steeringAngle;
+            currentAngle = -steeringAngle * (currentSpeed / maxSpeed);
+            R = this.computeR(currentAngle);
+            direction = direction.applyMatrix3(R);
+            this.mesh.rotation.y -= currentAngle;
         }
         if (is_moving && movement.right) {
-            direction = direction.applyMatrix3(steeringRight);
-            this.mesh.rotation.y -= steeringAngle;
+            currentAngle = steeringAngle * (currentSpeed / maxSpeed);
+            R = this.computeR(currentAngle);
+            direction = direction.applyMatrix3(R);
+            this.mesh.rotation.y -= currentAngle;
         }
     }
 
@@ -421,9 +426,6 @@ var Car = function() {
     this.stopBackward = function() {
         movement.backward = false;
     }
-
-    steeringLeft = this.computeR(-steeringAngle);
-    steeringRight = this.computeR(steeringAngle);
 }
 
 function createCar() {
