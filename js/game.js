@@ -1,4 +1,8 @@
-'use strict';
+/*
+ * Boilerplate for scene, camera, renderer, lights taken from
+ * https://tympanus.net/codrops/2016/04/26/the-aviator-animating-basic-3d-scene-threejs/
+ *
+ */
 
 var Colors = {
 	red:0xf25346,
@@ -9,13 +13,101 @@ var Colors = {
 	blue:0x68c3c0,
 };
 
-Physijs.scripts.worker = 'js/physijs_worker.js';
-Physijs.scripts.ammo = 'ammo.js';
+window.addEventListener('load', init, false);
 
-var initScene, render,
-    ground_material, car_material, wheel_material, wheel_geometry,
-    loader, renderer, render_stats, physics_stats, scene, ground_geometry, ground, hemisphereLight, shadowLight, camera,
-    car = {};
+function init() {
+	// set up the scene, the camera and the renderer
+	createScene();
+
+	// add the lights
+	createLights();
+
+	// add the objects
+    createGround();
+    createCar();
+
+    // add controls
+    createControls();
+
+	// start a loop that will update the objects' positions
+	// and render the scene on each frame
+	loop();
+}
+
+var scene,
+		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
+		renderer, container, car;
+
+function createScene() {
+	// Get the width and the height of the screen,
+	// use them to set up the aspect ratio of the camera
+	// and the size of the renderer.
+	HEIGHT = window.innerHeight;
+	WIDTH = window.innerWidth;
+
+	// Create the scene
+	scene = new THREE.Scene();
+
+	// Add a fog effect to the scene; same color as the
+	// background color used in the style sheet
+	scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
+
+	// Create the camera
+	aspectRatio = WIDTH / HEIGHT;
+	fieldOfView = 60;
+	nearPlane = 1;
+	farPlane = 10000;
+	camera = new THREE.PerspectiveCamera(
+		fieldOfView,
+		aspectRatio,
+		nearPlane,
+		farPlane
+		);
+
+	// Set the position of the camera
+	camera.position.x = 0;
+	camera.position.z = 200;
+	camera.position.y = 100;
+    camera.lookAt( 0, 0, 0 );
+
+	// Create the renderer
+	renderer = new THREE.WebGLRenderer({
+		// Allow transparency to show the gradient background
+		// we defined in the CSS
+		alpha: true,
+
+		// Activate the anti-aliasing; this is less performant,
+		// but, as our project is low-poly based, it should be fine :)
+		antialias: true
+	});
+
+	// Define the size of the renderer; in this case,
+	// it will fill the entire screen
+	renderer.setSize(WIDTH, HEIGHT);
+
+	// Enable shadow rendering
+	renderer.shadowMap.enabled = true;
+
+	// Add the DOM element of the renderer to the
+	// container we created in the HTML
+	container = document.getElementById('world');
+	container.appendChild(renderer.domElement);
+
+	// Listen to the screen: if the user resizes it
+	// we have to update the camera and the renderer size
+	window.addEventListener('resize', handleWindowResize, false);
+}
+
+function handleWindowResize() {
+	// update height and width of the renderer and the camera
+	HEIGHT = window.innerHeight;
+	WIDTH = window.innerWidth;
+	renderer.setSize(WIDTH, HEIGHT);
+	camera.aspect = WIDTH / HEIGHT;
+	camera.updateProjectionMatrix();
+}
+
+var hemisphereLight, shadowLight;
 
 function createLights() {
 	// A hemisphere light is a gradient colored light;
@@ -53,19 +145,19 @@ function createLights() {
 
 var Car = function() {
 
-//	this.mesh = new THREE.Object3D();
+    var direction = new THREE.Vector3(1., 0., 0.);
+    var speed = 5.;
+    var steeringAngle = Math.PI / 6;
+    var steeringM;
+	this.mesh = new THREE.Object3D();
 
     // Create the body
 	var geomBody = new THREE.BoxGeometry(80,30,50,1,1,1);
 	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, shading:THREE.FlatShading});
-	var body = new Physijs.BoxMesh(geomBody, matBody, 1000);
-    body.position.y = 10;
-    body.rotation.y = Math.PI;
-    body.scale.set( .15, .15, .15 );
+	var body = new THREE.Mesh(geomBody, matBody);
 	body.castShadow = true;
 	body.receiveShadow = true;
-    this.mesh = this.body = body;
-//	this.mesh.add(body);
+	this.mesh.add(body);
 
 	// Create the top
 	var geomRoof = new THREE.BoxGeometry(60,30,45,1,1,1);
@@ -215,194 +307,136 @@ var Car = function() {
     rightHandle.castShadow = true;
     rightHandle.receiveShadow = true;
     this.mesh.add(rightHandle);
+
+    // Create tires
+    var geomTire = new THREE.CylinderGeometry(10, 10, 10, 32);
+    var matTire = new THREE.MeshPhongMaterial({color:Colors.brownDark, shading:THREE.FlatShading});
+
+    var frontLeftTire = new THREE.Mesh(geomTire, matTire);
+    frontLeftTire.rotation.z = 1.57;
+    frontLeftTire.rotation.y = 1.57;
+    frontLeftTire.position.y = -12;
+    frontLeftTire.position.z = 15;
+    frontLeftTire.position.x = 20;
+    frontLeftTire.castShadow = true;
+    frontLeftTire.receiveShadow = true;
+    this.mesh.add(frontLeftTire);
+
+    var frontRightTire = new THREE.Mesh(geomTire, matTire);
+    frontRightTire.rotation.z = 1.57;
+    frontRightTire.rotation.y = 1.57;
+    frontRightTire.position.y = -12;
+    frontRightTire.position.z = -15;
+    frontRightTire.position.x = 20;
+    frontRightTire.castShadow = true;
+    frontRightTire.receiveShadow = true;
+    this.mesh.add(frontRightTire);
+
+    var backLeftTire = new THREE.Mesh(geomTire, matTire);
+    backLeftTire.rotation.z = 1.57;
+    backLeftTire.rotation.y = 1.57;
+    backLeftTire.position.y = -12;
+    backLeftTire.position.z = 15;
+    backLeftTire.position.x = -20;
+    backLeftTire.castShadow = true;
+    backLeftTire.receiveShadow = true;
+    this.mesh.add(backLeftTire);
+
+    var backRightTire = new THREE.Mesh(geomTire, matTire);
+    backRightTire.rotation.z = 1.57;
+    backRightTire.rotation.y = 1.57;
+    backRightTire.position.y = -12;
+    backRightTire.position.z = -15;
+    backRightTire.position.x = -20;
+    backRightTire.castShadow = true;
+    backRightTire.receiveShadow = true;
+    this.mesh.add(backRightTire);
+
+    this.computeR = function(radians) {
+        var M = new THREE.Matrix3();
+        M.set(Math.cos(radians), 0, -Math.sin(radians),
+              0,                 1,                  0,
+              Math.sin(radians), 0,  Math.cos(radians));
+        return M;
+    }
+
+    this.moveForward = function() {
+        this.mesh.position.addScaledVector(direction, speed);
+    }
+
+    this.turnLeft = function() {
+        direction = direction.applyMatrix3(steeringLeft);
+        this.mesh.rotation.y += steeringAngle;
+    }
+
+    this.turnRight = function() {
+        direction = direction.applyMatrix3(steeringRight);
+        this.mesh.rotation.y -= steeringAngle;
+    }
+
+    this.moveBackward = function() {
+        this.mesh.position.addScaledVector(direction, -speed);
+    }
+
+    steeringLeft = this.computeR(-steeringAngle);
+    steeringRight = this.computeR(steeringAngle);
 }
 
-initScene = function() {
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMapSoft = true;
-    document.getElementById( 'world' ).appendChild( renderer.domElement );
-
-    render_stats = new Stats();
-    render_stats.domElement.style.position = 'absolute';
-    render_stats.domElement.style.top = '0px';
-    render_stats.domElement.style.zIndex = 100;
-    document.getElementById( 'world' ).appendChild( render_stats.domElement );
-
-    physics_stats = new Stats();
-    physics_stats.domElement.style.position = 'absolute';
-    physics_stats.domElement.style.top = '50px';
-    physics_stats.domElement.style.zIndex = 100;
-    document.getElementById( 'world' ).appendChild( physics_stats.domElement );
-
-    scene = new Physijs.Scene;
-    scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
-    scene.addEventListener(
-        'update',
-        function() {
-            scene.simulate( undefined, 2 );
-            physics_stats.update();
-        }
-    );
-
-    camera = new THREE.PerspectiveCamera(
-        35,
-        window.innerWidth / window.innerHeight,
-        1,
-        1000
-    );
-    camera.position.set( 60, 50, 60 );
-    camera.lookAt( scene.position );
-    scene.add( camera );
-
-    // Light
-    createLights();
-
-    // Loader
-    loader = new THREE.TextureLoader();
-
-    // Materials
-    ground_material = Physijs.createMaterial(
-        new THREE.MeshPhongMaterial({ color: Colors.red }),
-        1., // high friction
-        .4 // low restitution
-    );
-
-    // Ground
-    ground = new Physijs.BoxMesh(
-        new THREE.BoxGeometry(100, 1, 100),
-        ground_material,
-        0 // mass
-    );
-    ground.receiveShadow = true;
-    scene.add( ground );
-
-
-    // Car
-    // car_material = Physijs.createMaterial(
-    //     new THREE.MeshLambertMaterial({ color: 0xff6666 }),
-    //     .8, // high friction
-    //     .2 // low restitution
-    // );
-
-    wheel_material = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial({ color: 0x444444 }),
-        .8, // high friction
-        .5 // medium restitution
-    );
-    wheel_geometry = new THREE.CylinderGeometry( 2, 2, 1, 8 );
-
-    // car.body = new Physijs.BoxMesh(
-    //     new THREE.BoxGeometry( 10, 5, 7 ),
-    //     car_material,
-    //     1000
-    // );
-    // car.body.position.y = 10;
-    // car.body.receiveShadow = car.body.castShadow = true;
+function createCar() {
     car = new Car();
-    scene.add( car.body );
+    car.mesh.position.y = 25;
+    scene.add(car.mesh);
+}
 
-    car.wheel_fl = new Physijs.CylinderMesh(
-        wheel_geometry,
-        wheel_material,
-        500
-    );
-    car.wheel_fl.rotation.x = Math.PI / 2;
-    car.wheel_fl.position.set( -3.5, 6.5, 5 );
-    car.wheel_fl.receiveShadow = car.wheel_fl.castShadow = true;
-    scene.add( car.wheel_fl );
-    car.wheel_fl_constraint = new Physijs.DOFConstraint(
-        car.wheel_fl, car.body, new THREE.Vector3( -3.5, 6.5, 5 )
-    );
-    scene.addConstraint( car.wheel_fl_constraint );
-    car.wheel_fl_constraint.setAngularLowerLimit({ x: 0, y: -Math.PI / 8, z: 1 });
-    car.wheel_fl_constraint.setAngularUpperLimit({ x: 0, y: Math.PI / 8, z: 0 });
+var Ground = function() {
 
-    car.wheel_fr = new Physijs.CylinderMesh(
-        wheel_geometry,
-        wheel_material,
-        500
-    );
-    car.wheel_fr.rotation.x = Math.PI / 2;
-    car.wheel_fr.position.set( -3.5, 6.5, -5 );
-    car.wheel_fr.receiveShadow = car.wheel_fr.castShadow = true;
-    scene.add( car.wheel_fr );
-    car.wheel_fr_constraint = new Physijs.DOFConstraint(
-        car.wheel_fr, car.body, new THREE.Vector3( -3.5, 6.5, -5 )
-    );
-    scene.addConstraint( car.wheel_fr_constraint );
-    car.wheel_fr_constraint.setAngularLowerLimit({ x: 0, y: -Math.PI / 8, z: 1 });
-    car.wheel_fr_constraint.setAngularUpperLimit({ x: 0, y: Math.PI / 8, z: 0 });
+    this.mesh = new THREE.Object3D();
 
-    car.wheel_bl = new Physijs.CylinderMesh(
-        wheel_geometry,
-        wheel_material,
-        500
-    );
-    car.wheel_bl.rotation.x = Math.PI / 2;
-    car.wheel_bl.position.set( 3.5, 6.5, 5 );
-    car.wheel_bl.receiveShadow = car.wheel_bl.castShadow = true;
-    scene.add( car.wheel_bl );
-    car.wheel_bl_constraint = new Physijs.DOFConstraint(
-        car.wheel_bl, car.body, new THREE.Vector3( 3.5, 6.5, 5 )
-    );
-    scene.addConstraint( car.wheel_bl_constraint );
-    car.wheel_bl_constraint.setAngularLowerLimit({ x: 0, y: 0, z: 0 });
-    car.wheel_bl_constraint.setAngularUpperLimit({ x: 0, y: 0, z: 0 });
+    var matGround = new THREE.MeshPhongMaterial({color:Colors.red});
+    var geomGround = new THREE.BoxGeometry(300, 1, 300);
+    var ground = new THREE.Mesh(geomGround, matGround);
+    ground.position.set( 0, 0, 0 );
+    ground.receiveShadow = true;
+    this.mesh.add(ground);
+}
 
-    car.wheel_br = new Physijs.CylinderMesh(
-        wheel_geometry,
-        wheel_material,
-        500
-    );
-    car.wheel_br.rotation.x = Math.PI / 2;
-    car.wheel_br.position.set( 3.5, 6.5, -5 );
-    car.wheel_br.receiveShadow = car.wheel_br.castShadow = true;
-    scene.add( car.wheel_br );
-    car.wheel_br_constraint = new Physijs.DOFConstraint(
-        car.wheel_br, car.body, new THREE.Vector3( 3.5, 6.5, -5 )
-    );
-    scene.addConstraint( car.wheel_br_constraint );
-    car.wheel_br_constraint.setAngularLowerLimit({ x: 0, y: 0, z: 0 });
-    car.wheel_br_constraint.setAngularUpperLimit({ x: 0, y: 0, z: 0 });
+function createGround() {
+    ground = new Ground();
+    scene.add(ground.mesh);
+}
 
-    var tireTargetVel = 10;
-    var tireMaxForce = 5000;
+function loop(){
+
+	// render the scene
+	renderer.render(scene, camera);
+
+	// call the loop function again
+	requestAnimationFrame(loop);
+}
+
+function createControls() {
     document.addEventListener(
         'keydown',
         function( ev ) {
             switch( ev.keyCode ) {
                 case 37:
                     // Left
-                    car.wheel_fl_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, 1, 200 );
-                    car.wheel_fr_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, 1, 200 );
-                    car.wheel_fl_constraint.enableAngularMotor( 1 );
-                    car.wheel_fr_constraint.enableAngularMotor( 1 );
+                    car.turnLeft();
                     break;
 
                 case 39:
                     // Right
-                    car.wheel_fl_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, -1, 200 );
-                    car.wheel_fr_constraint.configureAngularMotor( 1, -Math.PI / 2, Math.PI / 2, -1, 200 );
-                    car.wheel_fl_constraint.enableAngularMotor( 1 );
-                    car.wheel_fr_constraint.enableAngularMotor( 1 );
+                    car.turnRight();
                     break;
 
                 case 38:
                     // Up
-                    car.wheel_bl_constraint.configureAngularMotor( 2, 1, 0, tireTargetVel, tireMaxForce );
-                    car.wheel_br_constraint.configureAngularMotor( 2, 1, 0, tireTargetVel, tireMaxForce );
-                    car.wheel_bl_constraint.enableAngularMotor( 2 );
-                    car.wheel_br_constraint.enableAngularMotor( 2 );
+                    car.moveForward();
                     break;
 
                 case 40:
                     // Down
-                    car.wheel_bl_constraint.configureAngularMotor( 2, 1, 0, -tireTargetVel, tireMaxForce );
-                    car.wheel_br_constraint.configureAngularMotor( 2, 1, 0, -tireTargetVel, tireMaxForce );
-                    car.wheel_bl_constraint.enableAngularMotor( 2 );
-                    // car.wheel_br_constraint.enableAngularMotor( 2 );
+                    car.moveBackward();
                     break;
             }
         }
@@ -414,40 +448,24 @@ initScene = function() {
             switch( ev.keyCode ) {
                 case 37:
                     // Left
-                    car.wheel_fl_constraint.disableAngularMotor( 1 );
-                    car.wheel_fr_constraint.disableAngularMotor( 1 );
+
                     break;
 
                 case 39:
                     // Right
-                    car.wheel_fl_constraint.disableAngularMotor( 1 );
-                    car.wheel_fr_constraint.disableAngularMotor( 1 );
+
                     break;
 
                 case 38:
                     // Up
-                    car.wheel_bl_constraint.disableAngularMotor( 2 );
-                    car.wheel_br_constraint.disableAngularMotor( 2 );
+
                     break;
 
                 case 40:
                     // Down
-                    car.wheel_bl_constraint.disableAngularMotor( 2 );
-                    car.wheel_br_constraint.disableAngularMotor( 2 );
+
                     break;
             }
         }
     );
-
-
-    requestAnimationFrame( render );
-    scene.simulate();
-};
-
-render = function() {
-    requestAnimationFrame( render );
-    renderer.render( scene, camera );
-    render_stats.update();
-};
-
-window.onload = initScene;
+}
