@@ -147,8 +147,15 @@ var Car = function() {
 
     var direction = new THREE.Vector3(1., 0., 0.);
     var speed = 5.;
-    var steeringAngle = Math.PI / 6;
+    var steeringAngle = Math.PI / 12;
     var steeringM;
+
+    var movement = {
+        'forward': false,
+        'left': false,
+        'right': false,
+        'backward': false
+    }
 	this.mesh = new THREE.Object3D();
 
     // Create the body
@@ -360,22 +367,57 @@ var Car = function() {
         return M;
     }
 
+    this.update = function() {
+        if (movement.forward) {
+            this.mesh.position.addScaledVector(direction, speed);
+        }
+        if (movement.left) {
+            direction = direction.applyMatrix3(steeringLeft);
+            this.mesh.rotation.y += steeringAngle;
+        }
+        if (movement.right) {
+            direction = direction.applyMatrix3(steeringRight);
+            this.mesh.rotation.y -= steeringAngle;
+        }
+        if (movement.backward) {
+            this.mesh.position.addScaledVector(direction, -speed);
+        }
+    }
+
     this.moveForward = function() {
-        this.mesh.position.addScaledVector(direction, speed);
+        movement.forward = true;
+        movement.backward = false;
+    }
+
+    this.stopForward = function() {
+        movement.forward = false;
     }
 
     this.turnLeft = function() {
-        direction = direction.applyMatrix3(steeringLeft);
-        this.mesh.rotation.y += steeringAngle;
+        movement.left = true;
+        movement.right = false;
+    }
+
+    this.stopLeft = function() {
+        movement.left = false;
     }
 
     this.turnRight = function() {
-        direction = direction.applyMatrix3(steeringRight);
-        this.mesh.rotation.y -= steeringAngle;
+        movement.right = true;
+        movement.left = false;
+    }
+
+    this.stopRight = function() {
+        movement.right = false;
     }
 
     this.moveBackward = function() {
-        this.mesh.position.addScaledVector(direction, -speed);
+        movement.backward = true;
+        movement.forward = false;
+    }
+
+    this.stopBackward = function() {
+        movement.backward = false;
     }
 
     steeringLeft = this.computeR(-steeringAngle);
@@ -406,6 +448,7 @@ function createGround() {
 }
 
 function loop(){
+    car.update();
 
 	// render the scene
 	renderer.render(scene, camera);
@@ -448,22 +491,22 @@ function createControls() {
             switch( ev.keyCode ) {
                 case 37:
                     // Left
-
+                    car.stopLeft();
                     break;
 
                 case 39:
                     // Right
-
+                    car.stopRight();
                     break;
 
                 case 38:
                     // Up
-
+                    car.stopForward();
                     break;
 
                 case 40:
                     // Down
-
+                    car.stopBackward();
                     break;
             }
         }
