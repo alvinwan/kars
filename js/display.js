@@ -13,7 +13,9 @@ var Colors = {
 	blue:0x68c3c0,
 };
 
-function displayCarInit() {
+window.addEventListener('load', init, false);
+
+function init() {
 	// set up the scene, the camera and the renderer
 	createScene();
 
