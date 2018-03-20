@@ -26,19 +26,19 @@ function init() {
 	// add the objects
     createGround();
     createCar();
-    createFinish(300, 100);
+    createFuel(300, 100);
 
-    trees.push(createTree(100, -200, 1.));
-    trees.push(createTree(-180, 103, .9));
-    trees.push(createTree(120, -150, .5))
-    trees.push(createTree(-120, -240, .8));
-    trees.push(createTree(-120, 120, 1.2));
-    trees.push(createTree(120, 130, .7));
-    trees.push(createTree(-380, 103, .5));
-    trees.push(createTree(220, -50, 1.2));
-    trees.push(createTree(-320, -40, .6));
-    trees.push(createTree(-320, 120, .9));
-    trees.push(createTree(220, 130, .5));
+    trees.push(createTree(100, -200, 1., 0.3));
+    trees.push(createTree(-180, 103, .9, 0.6));
+    trees.push(createTree(120, -150, .5, 0.8))
+    trees.push(createTree(-120, -240, .8, 1.5));
+    trees.push(createTree(-120, 120, 1.2, 1.2));
+    trees.push(createTree(120, 130, .7, 0.3));
+    trees.push(createTree(-380, 103, .5, 1.2));
+    trees.push(createTree(220, -50, 1.2, 0.7));
+    trees.push(createTree(-320, -40, .6, 0.4));
+    trees.push(createTree(-320, 120, .9, 0.1));
+    trees.push(createTree(220, 130, .5, 1.5));
     trees.push(createTree(0, 0, .75));
 
     for (var i = 0; i < trees.length ; i ++) {
@@ -56,7 +56,7 @@ function init() {
 
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
-		renderer, container, car, finish, trees = [], collidableTreeMeshes = [];
+		renderer, container, car, fuel, trees = [], collidableTreeMeshes = [];
 
 function createScene() {
 	// Get the width and the height of the screen,
@@ -70,7 +70,7 @@ function createScene() {
 
 	// Add a fog effect to the scene; same color as the
 	// background color used in the style sheet
-	scene.fog = new THREE.Fog(0xf7d9aa, 300, 950);
+	scene.fog = new THREE.Fog(0xbadbe4, 500, 900);
 
 	// Create the camera
 	aspectRatio = WIDTH / HEIGHT;
@@ -85,7 +85,7 @@ function createScene() {
 		);
 
 	// Set the position of the camera
-	camera.position.set( 0, 300, 300 );
+	camera.position.set( 0, 400, 400 );
     camera.lookAt( 0, 0, 0 );
 
 	// Create the renderer
@@ -209,20 +209,24 @@ var Car = function() {
 	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white});
 
 	var headLightLeft = new THREE.Mesh(geomHeadLight, matHeadLight);
-	headLightLeft.position.y = 5;
-	headLightLeft.position.z = 15;
-	headLightLeft.position.x = 40;
+	headLightLeft.position.set( 40, 5, 15 );
 	headLightLeft.castShadow = true;
 	headLightLeft.receiveShadow = true;
 	this.mesh.add(headLightLeft);
 
 	var headLightRight = new THREE.Mesh(geomHeadLight, matHeadLight);
-	headLightRight.position.y = 5;
-	headLightRight.position.z = -15;
-	headLightRight.position.x = 40;
+	headLightRight.position.set( 40, 5, -15 );
 	headLightRight.castShadow = true;
 	headLightRight.receiveShadow = true;
 	this.mesh.add(headLightRight);
+
+	var headLightLeftLight = new THREE.PointLight( 0xffcc00, 1, 100 );
+    headLightLeftLight.position.set( 50, 5, 15 );
+    this.mesh.add( headLightLeftLight );
+
+    var headLightRightLight = new THREE.PointLight( 0xffcc00, 1, 100 );
+    headLightRightLight.position.set( 50, 5, -15 );
+    this.mesh.add( headLightRightLight );
 
 	// Create the taillights
 	var geomTailLight = new THREE.BoxGeometry(5,5,10,1,1,1);
@@ -388,6 +392,17 @@ var Car = function() {
         var is_moving = currentSpeed != 0;
         this.mesh.position.addScaledVector(direction, currentSpeed);
 
+        // disallow travel through trees
+        if (objectInBound(body, collidableTreeMeshes) && currentSpeed != 0) {
+            this.mesh.position.addScaledVector(direction, -3 * currentSpeed);
+            currentSpeed = 0;
+            is_moving = false;
+        }
+
+        if (objectInBound(body, [fuel.fuel])) {
+            console.log('You win')
+        }
+
         if (movement.forward) {
             currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
         } else if (movement.backward) {
@@ -409,13 +424,6 @@ var Car = function() {
             R = this.computeR(currentAngle);
             direction = direction.applyMatrix3(R);
             this.mesh.rotation.y -= currentAngle;
-        }
-
-        if (objectInBound(body, collidableTreeMeshes)) {
-            console.log('Game over')
-        }
-        if (objectInBound(body, [finish.finish])) {
-            console.log('You win')
         }
     }
 
@@ -467,9 +475,9 @@ var Ground = function() {
     this.mesh = new THREE.Object3D();
 
     var matGround = new THREE.MeshPhongMaterial({color:Colors.green});
-    var geomGround = new THREE.BoxGeometry(1200, 1, 800);
+    var geomGround = new THREE.BoxGeometry(800, 20, 500);
     var ground = new THREE.Mesh(geomGround, matGround);
-    ground.position.set( 0, 0, 0 );
+    ground.position.set( 0, -10, 0 );
     ground.receiveShadow = true;
     this.mesh.add(ground);
 }
@@ -511,28 +519,29 @@ var Tree = function() {
     this.mesh.add( trunk );
 }
 
-function createTree(x, z, scale) {
+function createTree(x, z, scale, rotation) {
     var tree = new Tree();
     scene.add(tree.mesh);
     tree.mesh.position.set( x, 0, z );
     tree.mesh.scale.set( scale, scale, scale );
+    tree.mesh.rotation.y = rotation;
     return tree;
 }
 
-var Finish = function() {
+var Fuel = function() {
     this.mesh = new THREE.Object3D();
 
-    var geomFinish = new THREE.BoxGeometry(50, 5, 50);
-    var matFinish = new THREE.MeshPhongMaterial({color:Colors.red, flatShading:true});
-    var finish = new THREE.Mesh( geomFinish, matFinish );
-    this.finish = finish;
-    this.mesh.add( finish );
+    var geomFuel = new THREE.BoxGeometry(50, 5, 50);
+    var matFuel = new THREE.MeshPhongMaterial({color:Colors.red, flatShading:true});
+    var fuel = new THREE.Mesh( geomFuel, matFuel );
+    this.fuel = fuel;
+    this.mesh.add( fuel );
 }
 
-function createFinish(x, z) {
-    finish = new Finish();
-    finish.mesh.position.set( x, 0, z );
-    scene.add(finish.mesh);
+function createFuel(x, z) {
+    fuel = new Fuel();
+    fuel.mesh.position.set( x, 0, z );
+    scene.add(fuel.mesh);
 }
 
 function loop(){
@@ -644,4 +653,14 @@ function get_xywh(object) {
     }
     var h = p.height;
     return {'x': x, 'y': y, 'w': w, 'h': h};
+}
+
+/* ANIMATION */
+
+function animateGrow(object) {
+
+}
+
+function animateShrink(object) {
+
 }
