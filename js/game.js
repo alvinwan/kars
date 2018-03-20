@@ -1,7 +1,8 @@
 /*
- * Boilerplate for scene, camera, renderer, lights taken from
- * https://tympanus.net/codrops/2016/04/26/the-aviator-animating-basic-3d-scene-threejs/
  *
+ * KARS
+ * ----
+ * Survival driving game, created by Alvin Wan (alvinwan.com)
  */
 
 var Colors = {
@@ -37,10 +38,18 @@ function init() {
 	loop();
 }
 
+/**
+ *
+ * RENDER
+ * ------
+ * Initial setup for camera, renderer, fog
+ *
+ * Boilerplate for scene, camera, renderer, lights taken from
+ * https://tympanus.net/codrops/2016/04/26/the-aviator-animating-basic-3d-scene-threejs/
+ */
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
-		renderer, container, car, fuel, trees = [], collidableTreeMeshes = [],
-		numTrees = 10;
+		renderer, container;
 
 function createScene() {
 	// Get the width and the height of the screen,
@@ -109,6 +118,13 @@ function handleWindowResize() {
 	camera.updateProjectionMatrix();
 }
 
+
+/**
+ *
+ * LIGHTS
+ * ------
+ * Utilities for applying lights in scene
+ */
 var hemisphereLight, shadowLight;
 
 function createLights() {
@@ -145,6 +161,42 @@ function createLights() {
 	scene.add(shadowLight);
 }
 
+/**
+ *
+ * OBJECTS
+ * -------
+ * Definitions and constructors for car, fuel, tree, ground
+ */
+var car, fuel, ground, trees = [], collidableTreeMeshes = [], numTrees = 10;
+
+/**
+ * Generic box that casts and receives shadows
+ */
+function createBox(dx, dy, dz, color, x, y, z, notFlatShading) {
+    var geom = new THREE.BoxGeometry(dx, dy, dz);
+    var mat = new THREE.MeshPhongMaterial({color:color, flatShading: notFlatShading != true});
+    var box = new THREE.Mesh(geom, mat);
+    box.castShadow = true;
+    box.receiveShadow = true;
+    box.position.set( x, y, z );
+    return box;
+}
+
+/**
+ * Cylinder that casts and receives shadows, rotation specific to tires in car
+ */
+function createCylinder(radiusTop, radiusBottom, height, radialSegments, color,
+                        x, y, z) {
+    var geom = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+    var mat = new THREE.MeshPhongMaterial({color:color, flatShading: true});
+    var cylinder = new THREE.Mesh(geom, mat);
+    cylinder.rotation.x = Math.PI / 2;  // hardcoded for tires in the car below
+    cylinder.castShadow = true;
+    cylinder.receiveShadow = true;
+    cylinder.position.set( x, y, z );
+    return cylinder;
+}
+
 var Car = function() {
 
     var direction = new THREE.Vector3(1., 0., 0.);
@@ -162,47 +214,47 @@ var Car = function() {
     }
 	this.mesh = new THREE.Object3D();
 
-    // Create the body
-	var geomBody = new THREE.BoxGeometry(80,30,50,1,1,1);
-	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
-	var body = new THREE.Mesh(geomBody, matBody);
-	body.castShadow = true;
-	body.receiveShadow = true;
+    var body = createBox( 80, 30, 50, Colors.brown, 0, 0, 0 );
+	var roof = createBox( 60, 30, 45, Colors.brown, 0, 30, 0);
+	var bumper = createBox( 90, 10, 45, Colors.brownDark, 0, -10, 0 );
+	var headLightLeft = createBox( 5, 5, 5, Colors.white, 40, 5, 15 );
+	var headLightRight = createBox( 5, 5, 5, Colors.white, 40, 5, -15 );
+	var tailLightLeft = createBox( 5, 5, 10, Colors.red, -40, 5, 21)
+	var tailLightRight = createBox( 5, 5, 10, Colors.red, -40, 5, -21)
+	var grate = createBox( 5, 5, 15, Colors.brownDark, 40, 5, 0 );
+	var windshield = createBox( 3, 20, 35, Colors.blue, 30, 25, 0, true );
+    var rearshield = createBox( 3, 20, 35, Colors.blue, -30, 25, 0, true );
+    var leftWindow = createBox( 40, 20, 3, Colors.blue, 0, 25, 22, true );
+    var rightWindow = createBox( 40, 20, 3, Colors.blue, 0, 25, -22, true );
+    var leftDoor = createBox( 30, 30, 3, Colors.brown, 10, 0, 25 );
+    var rightDoor = createBox( 30, 30, 3, Colors.brown, 10, 0, -25 );
+    var leftHandle = createBox( 10, 3, 3, Colors.brownDark, 5, 8, 27 );
+    var rightHandle = createBox( 10, 3, 3, Colors.brownDark, 5, 8, -27 );
+    var frontLeftTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, 20, -12, 15 );
+    var frontRightTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, 20, -12, -15 );
+    var backLeftTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, -20, -12, 15 );
+    var backRightTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, -20, -12, -15 );
+
 	this.mesh.add(body);
-
-	// Create the top
-	var geomRoof = new THREE.BoxGeometry(60,30,45,1,1,1);
-	var matRoof = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
-	var roof = new THREE.Mesh(geomRoof, matRoof);
-	roof.position.y = 30;
-	roof.castShadow = true;
-	roof.receiveShadow = true;
 	this.mesh.add(roof);
-
-	// Create the bumper
-	var geomBumper = new THREE.BoxGeometry(90,10,45,1,1,1);
-	var matBumper = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-	var bumper = new THREE.Mesh(geomBumper, matBumper);
-	bumper.position.y = -10;
-	bumper.castShadow = true;
-	bumper.receiveShadow = true;
 	this.mesh.add(bumper);
-
-	// Create the headlights
-	var geomHeadLight = new THREE.BoxGeometry(5,5,5,1,1,1);
-	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white});
-
-	var headLightLeft = new THREE.Mesh(geomHeadLight, matHeadLight);
-	headLightLeft.position.set( 40, 5, 15 );
-	headLightLeft.castShadow = true;
-	headLightLeft.receiveShadow = true;
 	this.mesh.add(headLightLeft);
-
-	var headLightRight = new THREE.Mesh(geomHeadLight, matHeadLight);
-	headLightRight.position.set( 40, 5, -15 );
-	headLightRight.castShadow = true;
-	headLightRight.receiveShadow = true;
 	this.mesh.add(headLightRight);
+	this.mesh.add(tailLightLeft);
+	this.mesh.add(tailLightRight);
+    this.mesh.add(grate);
+    this.mesh.add(windshield);
+    this.mesh.add(rearshield);
+    this.mesh.add(leftWindow);
+    this.mesh.add(rightWindow);
+    this.mesh.add(leftDoor);
+    this.mesh.add(rightDoor);
+    this.mesh.add(leftHandle);
+    this.mesh.add(rightHandle);
+    this.mesh.add(frontLeftTire);
+    this.mesh.add(frontRightTire);
+    this.mesh.add(backLeftTire);
+    this.mesh.add(backRightTire);
 
 	var headLightLeftLight = new THREE.PointLight( 0xffcc00, 1, 100 );
     headLightLeftLight.position.set( 50, 5, 15 );
@@ -211,157 +263,6 @@ var Car = function() {
     var headLightRightLight = new THREE.PointLight( 0xffcc00, 1, 100 );
     headLightRightLight.position.set( 50, 5, -15 );
     this.mesh.add( headLightRightLight );
-
-	// Create the taillights
-	var geomTailLight = new THREE.BoxGeometry(5,5,10,1,1,1);
-	var matTailLight = new THREE.MeshPhongMaterial({color:Colors.red});
-
-	var tailLightLeft = new THREE.Mesh(geomTailLight, matTailLight);
-	tailLightLeft.position.y = 5;
-	tailLightLeft.position.z = 21;
-	tailLightLeft.position.x = -40;
-	tailLightLeft.castShadow = true;
-	tailLightLeft.receiveShadow = true;
-	this.mesh.add(tailLightLeft);
-
-	var tailLightRight = new THREE.Mesh(geomTailLight, matTailLight);
-	tailLightRight.position.y = 5;
-	tailLightRight.position.z = -21;
-	tailLightRight.position.x = -40;
-	tailLightRight.castShadow = true;
-	tailLightRight.receiveShadow = true;
-	this.mesh.add(tailLightRight);
-
-	// Create the grate
-	var geomGrate = new THREE.BoxGeometry(5,5,15,1,1,1);
-	var matGrate = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-    var grate = new THREE.Mesh(geomGrate, matGrate);
-    grate.position.y = 5;
-    grate.position.z = 0;
-    grate.position.x = 40;
-    grate.castShadow = true;
-    grate.receiveShadow = true;
-    this.mesh.add(grate);
-
-    // Create windshield
-    var geomWindshield = new THREE.BoxGeometry(3,20,35,1,1,1);
-	var matWindshield = new THREE.MeshPhongMaterial({color:Colors.blue});
-
-    var windshield = new THREE.Mesh(geomWindshield, matWindshield);
-    windshield.position.y = 25;
-    windshield.position.z = 0;
-    windshield.position.x = 30;
-    windshield.castShadow = true;
-    windshield.receiveShadow = true;
-    this.mesh.add(windshield);
-
-    var rearshield = new THREE.Mesh(geomWindshield, matWindshield);
-    rearshield.position.y = 25;
-    rearshield.position.z = 0;
-    rearshield.position.x = -30;
-    rearshield.castShadow = true;
-    rearshield.receiveShadow = true;
-    this.mesh.add(rearshield);
-
-    // Create windows
-    var geomWindow = new THREE.BoxGeometry(40,20,3,1,1,1);
-	var matWindow = new THREE.MeshPhongMaterial({color:Colors.blue});
-
-	var leftWindow = new THREE.Mesh(geomWindow, matWindow);
-	leftWindow.position.y = 25;
-    leftWindow.position.z = 22;
-    leftWindow.position.x = 0;
-    leftWindow.castShadow = true;
-    leftWindow.receiveShadow = true;
-    this.mesh.add(leftWindow);
-
-    var rightWindow = new THREE.Mesh(geomWindow, matWindow);
-	rightWindow.position.y = 25;
-    rightWindow.position.z = -22;
-    rightWindow.position.x = 0;
-    rightWindow.castShadow = true;
-    rightWindow.receiveShadow = true;
-    this.mesh.add(rightWindow);
-
-    // Create doors
-    var geomDoor = new THREE.BoxGeometry(30,30,3,1,1,1);
-	var matDoor = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
-
-	var leftDoor = new THREE.Mesh(geomDoor, matDoor);
-	leftDoor.position.y = 0;
-    leftDoor.position.z = 25;
-    leftDoor.position.x = 10;
-    leftDoor.castShadow = true;
-    leftDoor.receiveShadow = true;
-    this.mesh.add(leftDoor);
-
-    var rightDoor = new THREE.Mesh(geomDoor, matDoor);
-	rightDoor.position.y = 0;
-    rightDoor.position.z = -25;
-    rightDoor.position.x = 10;
-    rightDoor.castShadow = true;
-    rightDoor.receiveShadow = true;
-    this.mesh.add(rightDoor);
-
-    // Create door handle
-    var geomHandle = new THREE.BoxGeometry(10,3,3,1,1,1);
-	var matHandle = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-
-	var leftHandle = new THREE.Mesh(geomHandle, matHandle);
-	leftHandle.position.y = 8;
-    leftHandle.position.z = 27;
-    leftHandle.position.x = 5;
-    leftHandle.castShadow = true;
-    leftHandle.receiveShadow = true;
-    this.mesh.add(leftHandle);
-
-    var rightHandle = new THREE.Mesh(geomHandle, matHandle);
-	rightHandle.position.y = 8;
-    rightHandle.position.z = -27;
-    rightHandle.position.x = 5;
-    rightHandle.castShadow = true;
-    rightHandle.receiveShadow = true;
-    this.mesh.add(rightHandle);
-
-    // Create tires
-    var geomTire = new THREE.CylinderGeometry(10, 10, 10, 32);
-    var matTire = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-
-    var frontLeftTire = new THREE.Mesh(geomTire, matTire);
-    frontLeftTire.rotation.x = Math.PI / 2;
-    frontLeftTire.position.y = -12;
-    frontLeftTire.position.z = 15;
-    frontLeftTire.position.x = 20;
-    frontLeftTire.castShadow = true;
-    frontLeftTire.receiveShadow = true;
-    this.mesh.add(frontLeftTire);
-
-    var frontRightTire = new THREE.Mesh(geomTire, matTire);
-    frontRightTire.rotation.x = Math.PI / 2;
-    frontRightTire.position.y = -12;
-    frontRightTire.position.z = -15;
-    frontRightTire.position.x = 20;
-    frontRightTire.castShadow = true;
-    frontRightTire.receiveShadow = true;
-    this.mesh.add(frontRightTire);
-
-    var backLeftTire = new THREE.Mesh(geomTire, matTire);
-    backLeftTire.rotation.x = Math.PI / 2;
-    backLeftTire.position.y = -12;
-    backLeftTire.position.z = 15;
-    backLeftTire.position.x = -20;
-    backLeftTire.castShadow = true;
-    backLeftTire.receiveShadow = true;
-    this.mesh.add(backLeftTire);
-
-    var backRightTire = new THREE.Mesh(geomTire, matTire);
-    backRightTire.rotation.x = Math.PI / 2;
-    backRightTire.position.y = -12;
-    backRightTire.position.z = -15;
-    backRightTire.position.x = -20;
-    backRightTire.castShadow = true;
-    backRightTire.receiveShadow = true;
-    this.mesh.add(backRightTire);
 
     this.computeR = function(radians) {
         var M = new THREE.Matrix3();
@@ -374,6 +275,7 @@ var Car = function() {
     this.update = function() {
         var sign, R, currentAngle;
         var is_moving = currentSpeed != 0;
+        var is_turning = movement.left || movement.right;
         this.mesh.position.addScaledVector(direction, currentSpeed);
 
         // disallow travel through trees
@@ -383,69 +285,46 @@ var Car = function() {
             is_moving = false;
         }
 
+        // mark victory and advance level
         if (objectInBound(body, [fuel.fuel])) {
             console.log('You win')
         }
 
+        // update speed according to acceleration
         if (movement.forward) {
             currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
         } else if (movement.backward) {
             currentSpeed = Math.max(-maxSpeed, currentSpeed - acceleration);
         }
+
+        // update current position based on speed
         if (is_moving) {
             sign = currentSpeed / Math.abs(currentSpeed);
             currentSpeed = Math.abs(currentSpeed) - acceleration / 1.5;
             currentSpeed *= sign;
-        }
-        if (is_moving && movement.left) {
-            currentAngle = -steeringAngle * (currentSpeed / maxSpeed);
-            R = this.computeR(currentAngle);
-            direction = direction.applyMatrix3(R);
-            this.mesh.rotation.y -= currentAngle;
-        }
-        if (is_moving && movement.right) {
-            currentAngle = steeringAngle * (currentSpeed / maxSpeed);
-            R = this.computeR(currentAngle);
-            direction = direction.applyMatrix3(R);
-            this.mesh.rotation.y -= currentAngle;
+
+            // update and apply rotation based on speed
+            if (is_turning) {
+                currentAngle = movement.left ? -steeringAngle : steeringAngle;
+                currentAngle *= currentSpeed / maxSpeed;
+                R = this.computeR(currentAngle);
+                direction = direction.applyMatrix3(R);
+                this.mesh.rotation.y -= currentAngle;
+            }
         }
     }
 
-    this.moveForward = function() {
-        movement.forward = true;
-        movement.backward = false;
-    }
+    this.moveForward = function() { movement.forward = true; }
+    this.stopForward = function() { movement.forward = false; }
 
-    this.stopForward = function() {
-        movement.forward = false;
-    }
+    this.turnLeft = function() { movement.left = true; }
+    this.stopLeft = function() { movement.left = false; }
 
-    this.turnLeft = function() {
-        movement.left = true;
-        movement.right = false;
-    }
+    this.turnRight = function() { movement.right = true; }
+    this.stopRight = function() { movement.right = false; }
 
-    this.stopLeft = function() {
-        movement.left = false;
-    }
-
-    this.turnRight = function() {
-        movement.right = true;
-        movement.left = false;
-    }
-
-    this.stopRight = function() {
-        movement.right = false;
-    }
-
-    this.moveBackward = function() {
-        movement.backward = true;
-        movement.forward = false;
-    }
-
-    this.stopBackward = function() {
-        movement.backward = false;
-    }
+    this.moveBackward = function() { movement.backward = true; }
+    this.stopBackward = function() { movement.backward = false; }
 }
 
 function createCar() {
@@ -455,14 +334,8 @@ function createCar() {
 }
 
 var Ground = function() {
-
     this.mesh = new THREE.Object3D();
-
-    var matGround = new THREE.MeshPhongMaterial({color:Colors.green});
-    var geomGround = new THREE.BoxGeometry(800, 20, 500);
-    var ground = new THREE.Mesh(geomGround, matGround);
-    ground.position.set( 0, -10, 0 );
-    ground.receiveShadow = true;
+    var ground = createBox( 800, 20, 500, Colors.green, 0, -10, 0 );
     this.mesh.add(ground);
 }
 
@@ -528,7 +401,16 @@ function createFuel(x, z) {
     scene.add(fuel.mesh);
 }
 
+
+/**
+ *
+ * MECHANICS
+ * ---------
+ * Handles controls, game loop, and object collisions
+ */
+
 function loop() {
+    // handle car movement and collisions
     car.update();
 
     // handle all growth animations
@@ -664,7 +546,16 @@ function createTrees() {
     }
 }
 
-/* ANIMATION */
+/**
+ *
+ * ANIMATION
+ * ---------
+ * Allows growth and shrinkage for any object in the game
+ *
+ * Call `startGrowth(...)` or `startShrink(...)` accordingly, on any object, to
+ * start growing or shrinking the object. Main game loop invoke `animateGrow`
+ * and `animateShrink` which handle incremental grow and shrink updates.
+ */
 
 function startGrowth(object, duration, dy, scale) {
     object.animateGrow_isGrowing = true;
