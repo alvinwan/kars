@@ -28,8 +28,7 @@ function init() {
 	// add the objects
     createGround();
     createCar();
-    createFuel(300, 100);
-    createTrees();
+    createLevel();
 
     // add controls
     createControls();
@@ -225,7 +224,10 @@ var Car = function() {
         'right': false,
         'backward': false
     }
+
 	this.mesh = new THREE.Object3D();
+    this.berth = 100; // berth for new collidables (e.g., if berth is 100, no
+                      // tree will be initialized with 100 units)
 
     var body = createBox( 80, 30, 50, Colors.brown, 0, 0, 0 );
 	var roof = createBox( 60, 30, 45, Colors.brown, 0, 30, 0);
@@ -392,6 +394,7 @@ function createTree(x, z, scale, rotation) {
  */
 var Fuel = function() {
     this.mesh = new THREE.Object3D();
+    this.berth = 100;
 
     var slab = createBox( 50, 5, 50, Colors.brown, 0, 0, 0 );
     var body = createBox( 20, 100, 15, Colors.red, 0, 0, 0 );
@@ -536,18 +539,7 @@ function checkCollisions() {
 
     // mark victory and advance level
     if (objectInBound(car.collidable, collidableFuels)) {
-        collidableFuels = [];
-        scale = fuel.mesh.scale.x;
-        startShrink( fuel.mesh, 50, 10, scale );
-
-        for (let tree of trees) {
-            scale = tree.mesh.scale.x;
-            delay = delay = 2000 * Math.random();
-            setTimeout(function(object, scale) {
-                startShrink(object, 25, 10, scale);
-            }.bind(this, tree.mesh, scale), delay);
-        }
-        trees = collidableTrees = [];
+        endLevel();
     }
 }
 
@@ -576,26 +568,72 @@ function get_xywh(object) {  // TODO: annotate
     return {'x': x, 'y': y, 'w': w, 'h': h};
 }
 
-/* TREES */
+/**
+ *
+ * LEVELS
+ * ------
+ * Logic for start and end of levels, including initialization of objects on
+ * the map
+ */
+
+function createLevel() {
+    createFuels();
+    createTrees();
+}
+
+function endLevel() {
+    endFuels();
+    endTrees();
+    setTimeout(createLevel, 2000);
+}
 
 function createTrees() { // TODO: find a home
     var x, y, scale, rotate, delay;
     for (var i = 0; i < numTrees; i++) {
         x = Math.random() * 600 - 300;
-        y = Math.random() * 400 - 200;
+        z = Math.random() * 400 - 200;
         scale = Math.random() * 1 + 0.5;
         rotate = Math.random() * Math.PI * 2;
         delay = 2000 * Math.random()
 
-        var tree = createTree(x, y, scale, rotate);
+        var treePosition = new THREE.Vector3( x, 0, z );
+        if (treePosition.distanceTo(car.mesh.position) < car.berth ||
+                treePosition.distanceTo(fuel.mesh.position) < fuel.berth) {
+            continue;
+        }
+        var tree = createTree(x, z, 0.01, rotate);
 
         setTimeout(function(object, scale) {
             startGrowth(object, 50, 10, scale);
         }.bind(this, tree.mesh, scale), delay);
-        tree.mesh.scale.set( 0.01, 0.01, 0.01 );
 
         collidableTrees.push(tree.collidable);
     }
+}
+
+function endTrees() {
+    for (let tree of trees) {
+        scale = tree.mesh.scale.x;
+        delay = delay = 2000 * Math.random();
+        setTimeout(function(object, scale) {
+            startShrink(object, 25, -10, scale);
+        }.bind(this, tree.mesh, scale), delay);
+    }
+    collidableTrees = [];
+    collidableFuels = [];
+    trees = [];
+}
+
+function createFuels() {
+    var x = Math.random() * 600 - 300;
+    var y = Math.random() * 400 - 200;
+    createFuel(x, y);
+    startGrowth(fuel.mesh, 50, 10, 1);
+}
+
+function endFuels() {
+    scale = fuel.mesh.scale.x;
+    startShrink( fuel.mesh, 25, -10, scale );
 }
 
 /**
@@ -660,7 +698,7 @@ function animateShrink() {
 
             x = child.position.x;
             z = child.position.z;
-            y = child.animateShrink_start_y + (progress * child.animateGrow_end_dy);
+            y = child.animateShrink_start_y + (progress * child.animateShrink_end_dy);
             child.position.set( x, y, z );
 
             scale = progress * child.animateShrink_start_scale;
