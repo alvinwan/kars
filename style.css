@@ -1,12 +1,58 @@
 * {
     margin:0;
     padding:0;
+    font-family:'Avenir Next', Avenir, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+html, body {
+    background: linear-gradient(#badbe4, #aaf7e1);
 }
 
 #world {
 	position: absolute;
-	width: 100%;
+	width: 90%;
 	height: 100%;
+	right:0;
 	overflow: hidden;
-	background: linear-gradient(#badbe4, #aaf7e1);
+}
+
+h1 {
+    font-family: 'Playfair Display', serif;
+    float:left;
+    position:fixed;
+    top:0;
+    left:0;
+    z-index:100;
+    margin:1em 0 0 2em;
+}
+
+h1 * {
+    float:left;
+}
+
+h1 .title {
+    font-family:inherit;
+    font-weight:700;
+    font-size:3em;
+}
+
+h1 .the {
+    font-family:"Playfair Display script=all rev=1";
+    font-style:italic;
+    font-weight:700;
+    font-size:0.85em;
+    position:absolute;
+    top:0.6em;
+    left:3em;
+    width:auto;
+}
+
+h1 .byline {
+    text-transform:uppercase;
+    color:#333;
+    letter-spacing:0.5em;
+    font-size:0.35em;
+    font-weight:600;
+    width:100%;
+    padding-left:1em;
 }

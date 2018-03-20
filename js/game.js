@@ -13,6 +13,7 @@ var Colors = {
 	brownDark:0x23190f,
 	blue:0x68c3c0,
     green:0x669900,
+    greenDark:0x496d01,
     golden:0xff9900
 };
 
@@ -352,7 +353,7 @@ function createCar() {
  * Create simple green, rectangular ground
  */
 function createGround() {
-    ground = createBox( 800, 20, 500, Colors.green, 0, -10, 0 );
+    ground = createBox( 800, 20, 500, Colors.greenDark, 0, -10, 0 );
     scene.add(ground);
 }
 
@@ -451,6 +452,7 @@ function loop() {
 
 	// render the scene
 	renderer.render(scene, camera);
+	scene.rotation.y += 0.0025
 
 	// check global collisions
     checkCollisions();
@@ -711,3 +713,6 @@ function animateShrink() {
         }
     }
 }
+
+// TODO: add times of day
+// TODO: fix object collision weirdness (possible due to rotated objects)
