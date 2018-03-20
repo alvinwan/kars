@@ -27,33 +27,7 @@ function init() {
     createGround();
     createCar();
     createFuel(300, 100);
-
     createTrees();
-    trees.push(createTree(100, -200, 1., 0.3));
-    trees.push(createTree(-180, 103, .9, 0.6));
-    trees.push(createTree(120, -150, .5, 0.8))
-    trees.push(createTree(-120, -240, .8, 1.5));
-    trees.push(createTree(-120, 120, 1.2, 1.2));
-    trees.push(createTree(120, 130, .7, 0.3));
-    trees.push(createTree(-380, 103, .5, 1.2));
-    trees.push(createTree(220, -50, 1.2, 0.7));
-    trees.push(createTree(-320, -40, .6, 0.4));
-    trees.push(createTree(-320, 120, .9, 0.1));
-    trees.push(createTree(220, 130, .5, 1.5));
-    trees.push(createTree(0, 0, .75));
-
-    for (var i = 0; i < 10; i++) {
-        setTimeout(function(i, scale) {
-            var object = trees[i].mesh;
-            startGrowth(object, 50, 10, scale);
-        }.bind(this, i, trees[i].mesh.scale.x), 2000 * Math.random());
-        trees[i].mesh.scale.set( 0.01, 0.01, 0.01 );
-    }
-
-    for (var i = 0; i < trees.length ; i ++) {
-//        collidableTreeMeshes.push.apply(collidableTreeMeshes, trees[i].mesh.children);
-        collidableTreeMeshes.push(trees[i].bottom);
-    }
 
     // add controls
     createControls();
@@ -65,7 +39,8 @@ function init() {
 
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
-		renderer, container, car, fuel, trees = [], collidableTreeMeshes = [];
+		renderer, container, car, fuel, trees = [], collidableTreeMeshes = [],
+		numTrees = 10;
 
 function createScene() {
 	// Get the width and the height of the screen,
@@ -666,6 +641,27 @@ function get_xywh(object) {
     }
     var h = p.height;
     return {'x': x, 'y': y, 'w': w, 'h': h};
+}
+
+/* TREES */
+
+function createTrees() {
+    var x, y, scale, rotate, delay;
+    for (var i = 0; i < numTrees; i++) {
+        x = Math.random() * 600 - 300;
+        y = Math.random() * 400 - 200;
+        scale = Math.random() * 1 + 0.5;
+        rotate = Math.random() * Math.PI * 2;
+        delay = 2000 * Math.random()
+
+        var tree = createTree(x, y, scale, rotate);
+
+        setTimeout(function(object, scale) {
+            startGrowth(object, 50, 10, scale);
+        }.bind(this, tree.mesh, scale), delay);
+        tree.mesh.scale.set( 0.01, 0.01, 0.01 );
+        collidableTreeMeshes.push(tree.bottom);
+    }
 }
 
 /* ANIMATION */
