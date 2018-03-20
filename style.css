@@ -16,14 +16,19 @@ html, body {
 	overflow: hidden;
 }
 
-h1 {
-    font-family: 'Playfair Display', serif;
-    float:left;
+.panel {
     position:fixed;
     top:0;
     left:0;
+    padding:2em 3em;
+    width:15em;
+}
+
+h1 {
+    font-family: 'Playfair Display', serif;
+    float:left;
     z-index:100;
-    margin:1em 0 0 2em;
+    position:relative;
 }
 
 h1 * {
@@ -55,4 +60,62 @@ h1 .byline {
     font-weight:600;
     width:100%;
     padding-left:1em;
+}
+
+.entries {
+    margin-top:3em;
+    width:100%;
+    float:left;
+}
+.entry {
+    float:left;
+    width:50%;
+    margin-left:-1px;
+    text-align:center;
+}
+.entry p {
+    width:100%;
+    text-align:center;
+    font-family:'Playfair Display';
+    font-size:2em;
+}
+.entry label {
+    text-align:center;
+    text-transform:uppercase;
+    letter-spacing:0.25em;
+    font-size:0.8em;
+    width:100%;
+    float:left;
+}
+.entry + .entry {
+    border-left:1px solid rgba(0,0,0,0.3);
+}
+
+.status {
+    width:70%;
+    display:inline-block;
+    float:none;
+    height:0.6em;
+    background-color:rgba(0,0,0,0.5);
+    border-radius:0.6em;
+    margin:1.25em 0;
+}
+
+.fill {
+    background-color:#f90;
+    height:0.4em;
+    width:95%;
+    margin-top:0.1em;
+    display:inline-block;
+    float:none;
+    background-color:#be1e2d;
+    border-radius:0.6em;
+}
+
+.instructions {
+    margin-top:3em;
+    float:left;
+    font-family:'Playfair Display';
+    text-align:center;
+    line-height:150%;
 }
