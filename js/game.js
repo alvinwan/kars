@@ -1,4 +1,4 @@
-/*
+/**
  *
  * KARS
  * ----
@@ -12,7 +12,8 @@ var Colors = {
 	pink:0xF5986E,
 	brownDark:0x23190f,
 	blue:0x68c3c0,
-    green:0x669900
+    green:0x669900,
+    golden:0xff9900
 };
 
 window.addEventListener('load', init, false);
@@ -167,7 +168,8 @@ function createLights() {
  * -------
  * Definitions and constructors for car, fuel, tree, ground
  */
-var car, fuel, ground, trees = [], collidableTreeMeshes = [], numTrees = 10;
+var car, fuel, ground, trees = [], collidableTrees = [], numTrees = 10,
+    collidableFuels = [];
 
 /**
  * Generic box that casts and receives shadows
@@ -183,20 +185,32 @@ function createBox(dx, dy, dz, color, x, y, z, notFlatShading) {
 }
 
 /**
- * Cylinder that casts and receives shadows, rotation specific to tires in car
+ * Generic cylinder that casts and receives shadows
  */
 function createCylinder(radiusTop, radiusBottom, height, radialSegments, color,
                         x, y, z) {
     var geom = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
     var mat = new THREE.MeshPhongMaterial({color:color, flatShading: true});
     var cylinder = new THREE.Mesh(geom, mat);
-    cylinder.rotation.x = Math.PI / 2;  // hardcoded for tires in the car below
     cylinder.castShadow = true;
     cylinder.receiveShadow = true;
     cylinder.position.set( x, y, z );
     return cylinder;
 }
 
+/**
+ * Cylinder with rotation specific to car
+ */
+function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y, z) {
+    var cylinder = createCylinder(radiusTop, radiusBottom, height, radialSegments, color, x, y, z);
+    cylinder.rotation.x = Math.PI / 2;  // hardcoded for tires in the car below
+    return cylinder;
+}
+
+/**
+ * Template for Car with "advanced motion" (i.e., acceleration and deceleration,
+ * rotation speed as a function of speed)
+ */
 var Car = function() {
 
     var direction = new THREE.Vector3(1., 0., 0.);
@@ -204,7 +218,6 @@ var Car = function() {
     var acceleration = 0.25;
     var currentSpeed = 0;
     var steeringAngle = Math.PI / 24;
-    var steeringM;
 
     var movement = {
         'forward': false,
@@ -230,10 +243,10 @@ var Car = function() {
     var rightDoor = createBox( 30, 30, 3, Colors.brown, 10, 0, -25 );
     var leftHandle = createBox( 10, 3, 3, Colors.brownDark, 5, 8, 27 );
     var rightHandle = createBox( 10, 3, 3, Colors.brownDark, 5, 8, -27 );
-    var frontLeftTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, 20, -12, 15 );
-    var frontRightTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, 20, -12, -15 );
-    var backLeftTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, -20, -12, 15 );
-    var backRightTire = createCylinder( 10, 10, 10, 32, Colors.brownDark, -20, -12, -15 );
+    var frontLeftTire = createTire( 10, 10, 10, 32, Colors.brownDark, 20, -12, 15 );
+    var frontRightTire = createTire( 10, 10, 10, 32, Colors.brownDark, 20, -12, -15 );
+    var backLeftTire = createTire( 10, 10, 10, 32, Colors.brownDark, -20, -12, 15 );
+    var backRightTire = createTire( 10, 10, 10, 32, Colors.brownDark, -20, -12, -15 );
 
 	this.mesh.add(body);
 	this.mesh.add(roof);
@@ -264,7 +277,7 @@ var Car = function() {
     headLightRightLight.position.set( 50, 5, -15 );
     this.mesh.add( headLightRightLight );
 
-    this.computeR = function(radians) {
+    function computeR(radians) {
         var M = new THREE.Matrix3();
         M.set(Math.cos(radians), 0, -Math.sin(radians),
               0,                 1,                  0,
@@ -279,15 +292,10 @@ var Car = function() {
         this.mesh.position.addScaledVector(direction, currentSpeed);
 
         // disallow travel through trees
-        if (objectInBound(body, collidableTreeMeshes) && currentSpeed != 0) {
+        if (objectInBound(this.collidable, collidableTrees) && is_moving) {
             this.mesh.position.addScaledVector(direction, -3 * currentSpeed);
             currentSpeed = 0;
             is_moving = false;
-        }
-
-        // mark victory and advance level
-        if (objectInBound(body, [fuel.fuel])) {
-            console.log('You win')
         }
 
         // update speed according to acceleration
@@ -307,7 +315,7 @@ var Car = function() {
             if (is_turning) {
                 currentAngle = movement.left ? -steeringAngle : steeringAngle;
                 currentAngle *= currentSpeed / maxSpeed;
-                R = this.computeR(currentAngle);
+                R = computeR(currentAngle);
                 direction = direction.applyMatrix3(R);
                 this.mesh.rotation.y -= currentAngle;
             }
@@ -325,59 +333,53 @@ var Car = function() {
 
     this.moveBackward = function() { movement.backward = true; }
     this.stopBackward = function() { movement.backward = false; }
+
+    this.collidable = body;
 }
 
+/**
+ * Create car with hard-coded start location
+ */
 function createCar() {
     car = new Car();
     car.mesh.position.set( -300, 25, -150);
     scene.add(car.mesh);
 }
 
-var Ground = function() {
-    this.mesh = new THREE.Object3D();
-    var ground = createBox( 800, 20, 500, Colors.green, 0, -10, 0 );
-    this.mesh.add(ground);
-}
-
+/**
+ * Create simple green, rectangular ground
+ */
 function createGround() {
-    ground = new Ground();
-    scene.add(ground.mesh);
+    ground = createBox( 800, 20, 500, Colors.green, 0, -10, 0 );
+    scene.add(ground);
 }
 
+/**
+ * Template for tree with three triangular prisms for foliage and a cylinderical
+ * trunk.
+ */
 var Tree = function() {
 
     this.mesh = new THREE.Object3D();
-    var matTree = new THREE.MeshPhongMaterial({color:Colors.green, flatShading:true});
+    var top = createCylinder( 1, 30, 30, 4, Colors.green, 0, 90, 0 );
+    var mid = createCylinder( 1, 40, 40, 4, Colors.green, 0, 70, 0 );
+    var bottom = createCylinder( 1, 50, 50, 4, Colors.green, 0, 40, 0 );
+    var trunk = createCylinder( 10, 10, 30, 32, Colors.brownDark, 0, 0, 0 );
 
-    var geomTop = new THREE.CylinderGeometry( 1, 30, 30, 4 );
-    var top = new THREE.Mesh( geomTop, matTree );
-    top.position.y = 90;
-    top.castShadow = true;
-    top.receiveShadow = true;
     this.mesh.add( top );
-
-    var geomMid = new THREE.CylinderGeometry( 1, 40, 40, 4 );
-    var mid = new THREE.Mesh( geomMid, matTree );
-    mid.position.y = 70;
-    mid.castShadow = true;
-    mid.receiveShadow = true;
     this.mesh.add( mid );
-
-    var geomBottom = new THREE.CylinderGeometry( 1, 50, 50, 4 );
-    var bottom = this.bottom = new THREE.Mesh( geomBottom, matTree );
-    bottom.position.y = 40;
-    bottom.castShadow = true;
-    bottom.receiveShadow = true;
     this.mesh.add( bottom );
-
-    var geomTrunk = new THREE.CylinderGeometry( 10, 10, 30, 32);
-    var matTrunk = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-    var trunk = new THREE.Mesh( geomTrunk, matTrunk );
     this.mesh.add( trunk );
+
+    this.collidable = bottom;
 }
 
+/**
+ * Creates tree according to specifications
+ */
 function createTree(x, z, scale, rotation) {
     var tree = new Tree();
+    trees.push(tree);
     scene.add(tree.mesh);
     tree.mesh.position.set( x, 0, z );
     tree.mesh.scale.set( scale, scale, scale );
@@ -385,20 +387,47 @@ function createTree(x, z, scale, rotation) {
     return tree;
 }
 
+/**
+ * Template for fuel container
+ */
 var Fuel = function() {
     this.mesh = new THREE.Object3D();
 
-    var geomFuel = new THREE.BoxGeometry(50, 5, 50);
-    var matFuel = new THREE.MeshPhongMaterial({color:Colors.red, flatShading:true});
-    var fuel = new THREE.Mesh( geomFuel, matFuel );
-    this.fuel = fuel;
-    this.mesh.add( fuel );
+    var slab = createBox( 50, 5, 50, Colors.brown, 0, 0, 0 );
+    var body = createBox( 20, 100, 15, Colors.red, 0, 0, 0 );
+    var leftArm = createBox( 3, 80, 10, Colors.red, 12.5, 0, 0 );
+    var rightArm = createBox( 3, 80, 10, Colors.red, -12.5, 0, 0 );
+    var frontWindow = createBox( 10, 10, 2, Colors.blue, 0, 35, 10 );
+    var backWindow = createBox( 10, 10, 2, Colors.blue, 0, 35, -10 );
+    var frontBox = createBox( 8, 8, 3, Colors.red, 0, 15, 10 );
+    var backBox = createBox( 8, 8, 3, Colors.red, 0, 15, -10 );
+    var head = createTire( 10, 10, 5, 32, Colors.red, 0, 60, 0 );
+    var headHighlight = createTire( 6, 6, 8, 32, Colors.golden, 0, 60, 0 );
+
+    var light = new THREE.PointLight( 0xffcc00, 1, 100 );
+    light.position.set( 0, 60, 0 );
+
+    this.mesh.add( slab );
+    this.mesh.add( body );
+    this.mesh.add( leftArm );
+    this.mesh.add( rightArm );
+    this.mesh.add( frontWindow );
+    this.mesh.add( backWindow );
+    this.mesh.add( frontBox );
+    this.mesh.add( backBox );
+    this.mesh.add( head );
+    this.mesh.add( headHighlight );
+    this.mesh.add( light );
+
+    this.collidable = slab;
 }
 
 function createFuel(x, z) {
     fuel = new Fuel();
     fuel.mesh.position.set( x, 0, z );
     scene.add(fuel.mesh);
+
+    collidableFuels.push(fuel.collidable);
 }
 
 
@@ -420,12 +449,15 @@ function loop() {
 	// render the scene
 	renderer.render(scene, camera);
 
+	// check global collisions
+    checkCollisions();
+
 	// call the loop function again
 	requestAnimationFrame(loop);
 }
 
 function createControls() {
-    document.addEventListener(
+    document.addEventListener( // TODO: rewrite to be if statements (pedantic reasons)
         'keydown',
         function( ev ) {
             switch( ev.keyCode ) {
@@ -481,7 +513,7 @@ function createControls() {
 }
 
 // https://stackoverflow.com/a/11480717/4855984 (doesn't work)
-function objectCollidedWith(object, collidableMeshList) {
+function objectCollidedWith(object, collidableMeshList) {  // TODO: place elsewhere, dysfunctional
     for (let child of object.children) {
         var childPosition = child.position.clone();
         for (var vertexIndex = 0; vertexIndex < child.geometry.vertices.length; vertexIndex++) {
@@ -499,8 +531,27 @@ function objectCollidedWith(object, collidableMeshList) {
     return false;
 }
 
+function checkCollisions() {
+    var scale, delay;
 
-function objectInBound(object, objectList) {
+    // mark victory and advance level
+    if (objectInBound(car.collidable, collidableFuels)) {
+        collidableFuels = [];
+        scale = fuel.mesh.scale.x;
+        startShrink( fuel.mesh, 50, 10, scale );
+
+        for (let tree of trees) {
+            scale = tree.mesh.scale.x;
+            delay = delay = 2000 * Math.random();
+            setTimeout(function(object, scale) {
+                startShrink(object, 25, 10, scale);
+            }.bind(this, tree.mesh, scale), delay);
+        }
+        trees = collidableTrees = [];
+    }
+}
+
+function objectInBound(object, objectList) { // TODO: annotate
     o = get_xywh(object);
     for (let target of objectList) {
         t = get_xywh(target);
@@ -511,7 +562,7 @@ function objectInBound(object, objectList) {
     return false;
 }
 
-function get_xywh(object) {
+function get_xywh(object) {  // TODO: annotate
     var p = object.geometry.parameters;
     var globalPosition = new THREE.Vector3( 0., 0., 0. );
     object.getWorldPosition(globalPosition);
@@ -527,7 +578,7 @@ function get_xywh(object) {
 
 /* TREES */
 
-function createTrees() {
+function createTrees() { // TODO: find a home
     var x, y, scale, rotate, delay;
     for (var i = 0; i < numTrees; i++) {
         x = Math.random() * 600 - 300;
@@ -542,7 +593,8 @@ function createTrees() {
             startGrowth(object, 50, 10, scale);
         }.bind(this, tree.mesh, scale), delay);
         tree.mesh.scale.set( 0.01, 0.01, 0.01 );
-        collidableTreeMeshes.push(tree.bottom);
+
+        collidableTrees.push(tree.collidable);
     }
 }
 
@@ -557,19 +609,22 @@ function createTrees() {
  * and `animateShrink` which handle incremental grow and shrink updates.
  */
 
-function startGrowth(object, duration, dy, scale) {
+function startGrowth(object, duration, dy, scale) { // TODO: annotate all of these functions
     object.animateGrow_isGrowing = true;
     object.animateGrow_end_time = duration;
-    object.animateGrow_end_y = dy;
+    object.animateGrow_end_dy = dy;
     object.animateGrow_end_scale = scale;
     object.animateGrow_start_y = object.position.y - dy;
     object.animateGrow_time = 0;
 }
 
-function startShrink(object, duration) {
+function startShrink(object, duration, dy, scale) {
     object.animateShrink_isShrinking = true;
-    object.animateShrink_end = duration;
-    object.animateShrink_time = 0;
+    object.animateShrink_start_time = duration;
+    object.animateShrink_time = duration;
+    object.animateShrink_start_scale = scale;
+    object.animateShrink_end_dy = dy;
+    object.animateShrink_start_y = object.position.y;
 }
 
 function animateGrow() {
@@ -579,9 +634,10 @@ function animateGrow() {
             child.animateGrow_time++;
 
             progress = child.animateGrow_time / child.animateGrow_end_time;
+
             x = child.position.x;
             z = child.position.z;
-            y = child.animateGrow_start_y + (progress * child.animateGrow_end_y);
+            y = child.animateGrow_start_y + (progress * child.animateGrow_end_dy);
             child.position.set( x, y, z );
 
             scale = child.animateGrow_end_scale * progress;
@@ -595,15 +651,23 @@ function animateGrow() {
 }
 
 function animateShrink() {
-    var scale;
+    var scale, progress;
     for (let child of scene.children) {
         if (child.animateShrink_isShrinking) {
-            child.animateShrink_time++;
+            child.animateShrink_time--;
 
-            scale = 1 - (child.animateShrink_time / child.animateShrink_end);
+            progress = child.animateShrink_time / child.animateShrink_start_time;
+
+            x = child.position.x;
+            z = child.position.z;
+            y = child.animateShrink_start_y + (progress * child.animateGrow_end_dy);
+            child.position.set( x, y, z );
+
+            scale = progress * child.animateShrink_start_scale;
             child.scale.set( scale, scale, scale );
 
-            if (child.animateShrink_time >= child.animateShrink_end) {
+            if (child.animateShrink_time <= 0) {
+                scene.remove(child);
                 child.animateShrink_isShrinking = false;
             }
         }
