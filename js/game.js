@@ -28,6 +28,7 @@ function init() {
     createCar();
     createFuel(300, 100);
 
+    createTrees();
     trees.push(createTree(100, -200, 1., 0.3));
     trees.push(createTree(-180, 103, .9, 0.6));
     trees.push(createTree(120, -150, .5, 0.8))
@@ -40,6 +41,14 @@ function init() {
     trees.push(createTree(-320, 120, .9, 0.1));
     trees.push(createTree(220, 130, .5, 1.5));
     trees.push(createTree(0, 0, .75));
+
+    for (var i = 0; i < 10; i++) {
+        setTimeout(function(i, scale) {
+            var object = trees[i].mesh;
+            startGrowth(object, 50, 10, scale);
+        }.bind(this, i, trees[i].mesh.scale.x), 2000 * Math.random());
+        trees[i].mesh.scale.set( 0.01, 0.01, 0.01 );
+    }
 
     for (var i = 0; i < trees.length ; i ++) {
 //        collidableTreeMeshes.push.apply(collidableTreeMeshes, trees[i].mesh.children);
@@ -544,8 +553,12 @@ function createFuel(x, z) {
     scene.add(fuel.mesh);
 }
 
-function loop(){
+function loop() {
     car.update();
+
+    // handle all growth animations
+    animateGrow();
+    animateShrink();
 
 	// render the scene
 	renderer.render(scene, camera);
@@ -649,7 +662,7 @@ function get_xywh(object) {
     var y = globalPosition.z;
     var w = p.width;
     if (p.hasOwnProperty('radiusBottom')) {
-        w = Math.max(p.radiusTop, p.radiusBottom) * 2;
+        w = Math.max(p.radiusTop, p.radiusBottom); // should be multiplied by 2?
     }
     var h = p.height;
     return {'x': x, 'y': y, 'w': w, 'h': h};
@@ -657,10 +670,55 @@ function get_xywh(object) {
 
 /* ANIMATION */
 
-function animateGrow(object) {
-
+function startGrowth(object, duration, dy, scale) {
+    object.animateGrow_isGrowing = true;
+    object.animateGrow_end_time = duration;
+    object.animateGrow_end_y = dy;
+    object.animateGrow_end_scale = scale;
+    object.animateGrow_start_y = object.position.y - dy;
+    object.animateGrow_time = 0;
 }
 
-function animateShrink(object) {
+function startShrink(object, duration) {
+    object.animateShrink_isShrinking = true;
+    object.animateShrink_end = duration;
+    object.animateShrink_time = 0;
+}
 
+function animateGrow() {
+    var progress, x, y, z, scale;
+    for (let child of scene.children) {
+        if (child.animateGrow_isGrowing) {
+            child.animateGrow_time++;
+
+            progress = child.animateGrow_time / child.animateGrow_end_time;
+            x = child.position.x;
+            z = child.position.z;
+            y = child.animateGrow_start_y + (progress * child.animateGrow_end_y);
+            child.position.set( x, y, z );
+
+            scale = child.animateGrow_end_scale * progress;
+            child.scale.set( scale, scale, scale );
+
+            if (child.animateGrow_time >= child.animateGrow_end_time) {
+                child.animateGrow_isGrowing = false;
+            }
+        }
+    }
+}
+
+function animateShrink() {
+    var scale;
+    for (let child of scene.children) {
+        if (child.animateShrink_isShrinking) {
+            child.animateShrink_time++;
+
+            scale = 1 - (child.animateShrink_time / child.animateShrink_end);
+            child.scale.set( scale, scale, scale );
+
+            if (child.animateShrink_time >= child.animateShrink_end) {
+                child.animateShrink_isShrinking = false;
+            }
+        }
+    }
 }
