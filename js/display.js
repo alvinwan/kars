@@ -30,6 +30,15 @@ function init() {
 	loop();
 }
 
+/**
+ *
+ * RENDER
+ * ------
+ * Initial setup for camera, renderer, fog
+ *
+ * Boilerplate for scene, camera, renderer, lights taken from
+ * https://tympanus.net/codrops/2016/04/26/the-aviator-animating-basic-3d-scene-threejs/
+ */
 var scene,
 		camera, fieldOfView, aspectRatio, nearPlane, farPlane, HEIGHT, WIDTH,
 		renderer, container, car;
@@ -102,6 +111,12 @@ function handleWindowResize() {
 	camera.updateProjectionMatrix();
 }
 
+/**
+ *
+ * LIGHTS
+ * ------
+ * Utilities for applying lights in scene
+ */
 var hemisphereLight, shadowLight;
 
 function createLights() {
@@ -138,211 +153,110 @@ function createLights() {
 	scene.add(shadowLight);
 }
 
+/**
+ *
+ * OBJECTS
+ * -------
+ * Definitions and constructors for car, fuel, tree, ground
+ */
+var car, fuel, ground, trees = [], collidableTrees = [], numTrees = 10,
+    collidableFuels = [];
+
+/**
+ * Generic box that casts and receives shadows
+ */
+function createBox(dx, dy, dz, color, x, y, z, notFlatShading) {
+    var geom = new THREE.BoxGeometry(dx, dy, dz);
+    var mat = new THREE.MeshPhongMaterial({color:color, flatShading: notFlatShading != true});
+    var box = new THREE.Mesh(geom, mat);
+    box.castShadow = true;
+    box.receiveShadow = true;
+    box.position.set( x, y, z );
+    return box;
+}
+
+/**
+ * Generic cylinder that casts and receives shadows
+ */
+function createCylinder(radiusTop, radiusBottom, height, radialSegments, color,
+                        x, y, z) {
+    var geom = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+    var mat = new THREE.MeshPhongMaterial({color:color, flatShading: true});
+    var cylinder = new THREE.Mesh(geom, mat);
+    cylinder.castShadow = true;
+    cylinder.receiveShadow = true;
+    cylinder.position.set( x, y, z );
+    return cylinder;
+}
+
+/**
+ * Cylinder with rotation specific to car
+ */
+function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y, z) {
+    var cylinder = createCylinder(radiusTop, radiusBottom, height, radialSegments, color, x, y, z);
+    cylinder.rotation.x = Math.PI / 2;  // hardcoded for tires in the car below
+    return cylinder;
+}
+
+/**
+ * Template for Car with "advanced motion" (i.e., acceleration and deceleration,
+ * rotation speed as a function of speed)
+ */
 var Car = function() {
 
 	this.mesh = new THREE.Object3D();
 
-    // Create the body
-	var geomBody = new THREE.BoxGeometry(80,30,50,1,1,1);
-	var matBody = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
-	var body = new THREE.Mesh(geomBody, matBody);
-	body.castShadow = true;
-	body.receiveShadow = true;
+    var body = createBox( 80, 30, 50, Colors.brown, 0, 0, 0 );
+	var roof = createBox( 60, 30, 45, Colors.brown, 0, 30, 0);
+	var bumper = createBox( 90, 10, 45, Colors.brownDark, 0, -10, 0 );
+	var headLightLeft = createBox( 5, 5, 5, Colors.white, 40, 5, 15 );
+	var headLightRight = createBox( 5, 5, 5, Colors.white, 40, 5, -15 );
+	var tailLightLeft = createBox( 5, 5, 10, Colors.red, -40, 5, 21)
+	var tailLightRight = createBox( 5, 5, 10, Colors.red, -40, 5, -21)
+	var grate = createBox( 5, 5, 15, Colors.brownDark, 40, 5, 0 );
+	var windshield = createBox( 3, 20, 35, Colors.blue, 30, 25, 0, true );
+    var rearshield = createBox( 3, 20, 35, Colors.blue, -30, 25, 0, true );
+    var leftWindow = createBox( 40, 20, 3, Colors.blue, 0, 25, 22, true );
+    var rightWindow = createBox( 40, 20, 3, Colors.blue, 0, 25, -22, true );
+    var leftDoor = createBox( 30, 30, 3, Colors.brown, 10, 0, 25 );
+    var rightDoor = createBox( 30, 30, 3, Colors.brown, 10, 0, -25 );
+    var leftHandle = createBox( 10, 3, 3, Colors.brownDark, 5, 8, 27 );
+    var rightHandle = createBox( 10, 3, 3, Colors.brownDark, 5, 8, -27 );
+    var frontLeftTire = createTire( 10, 10, 10, 32, Colors.brownDark, 20, -12, 15 );
+    var frontRightTire = createTire( 10, 10, 10, 32, Colors.brownDark, 20, -12, -15 );
+    var backLeftTire = createTire( 10, 10, 10, 32, Colors.brownDark, -20, -12, 15 );
+    var backRightTire = createTire( 10, 10, 10, 32, Colors.brownDark, -20, -12, -15 );
+
 	this.mesh.add(body);
-
-	// Create the top
-	var geomRoof = new THREE.BoxGeometry(60,30,45,1,1,1);
-	var matRoof = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
-	var roof = new THREE.Mesh(geomRoof, matRoof);
-	roof.position.y = 30;
-	roof.castShadow = true;
-	roof.receiveShadow = true;
 	this.mesh.add(roof);
-
-	// Create the bumper
-	var geomBumper = new THREE.BoxGeometry(90,10,45,1,1,1);
-	var matBumper = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-	var bumper = new THREE.Mesh(geomBumper, matBumper);
-	bumper.position.y = -10;
-	bumper.castShadow = true;
-	bumper.receiveShadow = true;
 	this.mesh.add(bumper);
-
-	// Create the headlights
-	var geomHeadLight = new THREE.BoxGeometry(5,5,5,1,1,1);
-	var matHeadLight = new THREE.MeshPhongMaterial({color:Colors.white, flatShading:true});
-
-	var headLightLeft = new THREE.Mesh(geomHeadLight, matHeadLight);
-	headLightLeft.position.y = 5;
-	headLightLeft.position.z = 15;
-	headLightLeft.position.x = 40;
-	headLightLeft.castShadow = true;
-	headLightLeft.receiveShadow = true;
 	this.mesh.add(headLightLeft);
-
-	var headLightRight = new THREE.Mesh(geomHeadLight, matHeadLight);
-	headLightRight.position.y = 5;
-	headLightRight.position.z = -15;
-	headLightRight.position.x = 40;
-	headLightRight.castShadow = true;
-	headLightRight.receiveShadow = true;
 	this.mesh.add(headLightRight);
-
-	// Create the taillights
-	var geomTailLight = new THREE.BoxGeometry(5,5,10,1,1,1);
-	var matTailLight = new THREE.MeshPhongMaterial({color:Colors.red, flatShading:true});
-
-	var tailLightLeft = new THREE.Mesh(geomTailLight, matTailLight);
-	tailLightLeft.position.y = 5;
-	tailLightLeft.position.z = 21;
-	tailLightLeft.position.x = -40;
-	tailLightLeft.castShadow = true;
-	tailLightLeft.receiveShadow = true;
 	this.mesh.add(tailLightLeft);
-
-	var tailLightRight = new THREE.Mesh(geomTailLight, matTailLight);
-	tailLightRight.position.y = 5;
-	tailLightRight.position.z = -21;
-	tailLightRight.position.x = -40;
-	tailLightRight.castShadow = true;
-	tailLightRight.receiveShadow = true;
 	this.mesh.add(tailLightRight);
-
-	// Create the grate
-	var geomGrate = new THREE.BoxGeometry(5,5,15,1,1,1);
-	var matGrate = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-    var grate = new THREE.Mesh(geomGrate, matGrate);
-    grate.position.y = 5;
-    grate.position.z = 0;
-    grate.position.x = 40;
-    grate.castShadow = true;
-    grate.receiveShadow = true;
     this.mesh.add(grate);
-
-    // Create windshield
-    var geomWindshield = new THREE.BoxGeometry(3,20,35,1,1,1);
-	var matWindshield = new THREE.MeshPhongMaterial({color:Colors.blue, flatShading:true});
-
-    var windshield = new THREE.Mesh(geomWindshield, matWindshield);
-    windshield.position.y = 25;
-    windshield.position.z = 0;
-    windshield.position.x = 30;
-    windshield.castShadow = true;
-    windshield.receiveShadow = true;
     this.mesh.add(windshield);
-
-    var rearshield = new THREE.Mesh(geomWindshield, matWindshield);
-    rearshield.position.y = 25;
-    rearshield.position.z = 0;
-    rearshield.position.x = -30;
-    rearshield.castShadow = true;
-    rearshield.receiveShadow = true;
     this.mesh.add(rearshield);
-
-    // Create windows
-    var geomWindow = new THREE.BoxGeometry(40,20,3,1,1,1);
-	var matWindow = new THREE.MeshPhongMaterial({color:Colors.blue, flatShading:true});
-
-	var leftWindow = new THREE.Mesh(geomWindow, matWindow);
-	leftWindow.position.y = 25;
-    leftWindow.position.z = 22;
-    leftWindow.position.x = 0;
-    leftWindow.castShadow = true;
-    leftWindow.receiveShadow = true;
     this.mesh.add(leftWindow);
-
-    var rightWindow = new THREE.Mesh(geomWindow, matWindow);
-	rightWindow.position.y = 25;
-    rightWindow.position.z = -22;
-    rightWindow.position.x = 0;
-    rightWindow.castShadow = true;
-    rightWindow.receiveShadow = true;
     this.mesh.add(rightWindow);
-
-    // Create doors
-    var geomDoor = new THREE.BoxGeometry(30,30,3,1,1,1);
-	var matDoor = new THREE.MeshPhongMaterial({color:Colors.brown, flatShading:true});
-
-	var leftDoor = new THREE.Mesh(geomDoor, matDoor);
-	leftDoor.position.y = 0;
-    leftDoor.position.z = 25;
-    leftDoor.position.x = 10;
-    leftDoor.castShadow = true;
-    leftDoor.receiveShadow = true;
     this.mesh.add(leftDoor);
-
-    var rightDoor = new THREE.Mesh(geomDoor, matDoor);
-	rightDoor.position.y = 0;
-    rightDoor.position.z = -25;
-    rightDoor.position.x = 10;
-    rightDoor.castShadow = true;
-    rightDoor.receiveShadow = true;
     this.mesh.add(rightDoor);
-
-    // Create door handle
-    var geomHandle = new THREE.BoxGeometry(10,3,3,1,1,1);
-	var matHandle = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-
-	var leftHandle = new THREE.Mesh(geomHandle, matHandle);
-	leftHandle.position.y = 8;
-    leftHandle.position.z = 27;
-    leftHandle.position.x = 5;
-    leftHandle.castShadow = true;
-    leftHandle.receiveShadow = true;
     this.mesh.add(leftHandle);
-
-    var rightHandle = new THREE.Mesh(geomHandle, matHandle);
-	rightHandle.position.y = 8;
-    rightHandle.position.z = -27;
-    rightHandle.position.x = 5;
-    rightHandle.castShadow = true;
-    rightHandle.receiveShadow = true;
     this.mesh.add(rightHandle);
-
-    // Create tires
-    var geomTire = new THREE.CylinderGeometry(10, 10, 10, 32);
-    var matTire = new THREE.MeshPhongMaterial({color:Colors.brownDark, flatShading:true});
-
-    var frontLeftTire = new THREE.Mesh(geomTire, matTire);
-    frontLeftTire.rotation.z = 1.57;
-    frontLeftTire.rotation.y = 1.57;
-    frontLeftTire.position.y = -12;
-    frontLeftTire.position.z = 15;
-    frontLeftTire.position.x = 20;
-    frontLeftTire.castShadow = true;
-    frontLeftTire.receiveShadow = true;
     this.mesh.add(frontLeftTire);
-
-    var frontRightTire = new THREE.Mesh(geomTire, matTire);
-    frontRightTire.rotation.z = 1.57;
-    frontRightTire.rotation.y = 1.57;
-    frontRightTire.position.y = -12;
-    frontRightTire.position.z = -15;
-    frontRightTire.position.x = 20;
-    frontRightTire.castShadow = true;
-    frontRightTire.receiveShadow = true;
     this.mesh.add(frontRightTire);
-
-    var backLeftTire = new THREE.Mesh(geomTire, matTire);
-    backLeftTire.rotation.z = 1.57;
-    backLeftTire.rotation.y = 1.57;
-    backLeftTire.position.y = -12;
-    backLeftTire.position.z = 15;
-    backLeftTire.position.x = -20;
-    backLeftTire.castShadow = true;
-    backLeftTire.receiveShadow = true;
     this.mesh.add(backLeftTire);
-
-    var backRightTire = new THREE.Mesh(geomTire, matTire);
-    backRightTire.rotation.z = 1.57;
-    backRightTire.rotation.y = 1.57;
-    backRightTire.position.y = -12;
-    backRightTire.position.z = -15;
-    backRightTire.position.x = -20;
-    backRightTire.castShadow = true;
-    backRightTire.receiveShadow = true;
     this.mesh.add(backRightTire);
+
+	var headLightLeftLight = new THREE.PointLight( 0xffcc00, 1, 100 );
+    headLightLeftLight.position.set( 50, 5, 15 );
+    this.mesh.add( headLightLeftLight );
+
+    var headLightRightLight = new THREE.PointLight( 0xffcc00, 1, 100 );
+    headLightRightLight.position.set( 50, 5, -15 );
+    this.mesh.add( headLightRightLight );
 }
+
 
 function createCar() {
     car = new Car();
