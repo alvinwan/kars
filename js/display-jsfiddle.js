@@ -21,7 +21,7 @@ var Colors = {
 	white:0xd8d0d1,
 	brown:0x59332e,
 	pink:0xF5986E,
-	brownDark:0x23190f,
+	brownDark:0x23190f
 };
 
 /**
@@ -40,8 +40,7 @@ var handleColor = Colors.brownDark;
 
 /********** End step 1 **********/
 
-// init();  // uncomment for JSFiddle, wraps code in onLoad eventListener
-window.addEventListener('load', init, false);
+init();
 
 function init() {
 	// set up the scene, the camera and the renderer
@@ -305,7 +304,7 @@ function loop(){
     var old_angle = car.mesh.rotation.y
 
     // Change me
-    var new_angle = old_angle + 0.02
+    var new_angle = old_angle
 
     car.mesh.rotation.y = new_angle
 
@@ -316,11 +315,11 @@ function loop(){
      * Simplify your code.
      */
 
-    car.mesh.rotation.y = old_angle
+    // Uncomment me
+    //car.mesh.rotation.y = old_angle
 
     // Change me
-    car.mesh.rotation.y = car.mesh.rotation.y + 0.02
-    //car.mesh.rotation.y += 0.02
+    car.mesh.rotation.y = car.mesh.rotation.y
 
     /********** End step 3 **********/
 
@@ -337,16 +336,6 @@ function loop(){
      * Make the car grow and shrink.
      */
 
-    if (new_angle < halfway) {
-        car.mesh.scale.x += 0.01
-        car.mesh.scale.y += 0.01
-        car.mesh.scale.z += 0.01
-    }
-    if (new_angle >= halfway) {
-        car.mesh.scale.x -= 0.01
-        car.mesh.scale.y -= 0.01
-        car.mesh.scale.z -= 0.01
-    }
 
     /********** End step 4 **********/
 

@@ -5,6 +5,9 @@
  * Survival driving game, created by Alvin Wan (alvinwan.com)
  */
 
+// init();  // uncomment for JSFiddle, wraps code in onLoad eventListener
+window.addEventListener('load', init, false);
+
 var Colors = {
 	red:0xf25346,
 	white:0xd8d0d1,
@@ -16,8 +19,6 @@ var Colors = {
     greenDark:0x496d01,
     golden:0xff9900
 };
-
-window.addEventListener('load', init, false);
 
 function init() {
 	// set up the scene, the camera and the renderer
@@ -211,7 +212,7 @@ function createTire(radiusTop, radiusBottom, height, radialSegments, color, x, y
  * Template for Car with "advanced motion" (i.e., acceleration and deceleration,
  * rotation speed as a function of speed)
  */
-var Car = function() {
+function Car() {
 
     var direction = new THREE.Vector3(1., 0., 0.);
     var maxSpeed = 10.;
@@ -361,7 +362,7 @@ function createGround() {
  * Template for tree with three triangular prisms for foliage and a cylinderical
  * trunk.
  */
-var Tree = function() {
+function Tree() {
 
     this.mesh = new THREE.Object3D();
     var top = createCylinder( 1, 30, 30, 4, Colors.green, 0, 90, 0 );
@@ -393,7 +394,7 @@ function createTree(x, z, scale, rotation) {
 /**
  * Template for fuel container
  */
-var Fuel = function() {
+function Fuel() {
     this.mesh = new THREE.Object3D();
     this.berth = 100;
 
