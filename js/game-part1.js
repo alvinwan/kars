@@ -41,10 +41,17 @@ function init() {
 	// add the lights
 	createLights();
 
-	// add the objects
+	/**
+     *
+     * STEP 1
+     * ------
+     * Create objects, namely ground and car.
+     */
+
     createGround();
     createCar();
-    createLevel();
+
+    /********** End step 1 **********/
 
     // add controls
     createControls();
@@ -309,13 +316,6 @@ function Car() {
         var is_turning = movement.left || movement.right;
         this.mesh.position.addScaledVector(direction, currentSpeed);
 
-        // disallow travel through trees
-        if (objectInBound(this.collidable, collidableTrees) && is_moving) {
-            this.mesh.position.addScaledVector(direction, -3 * currentSpeed);
-            currentSpeed = 0;
-            is_moving = false;
-        }
-
         // update speed according to acceleration
         if (movement.forward) {
             currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
@@ -373,84 +373,6 @@ function createGround() {
 }
 
 /**
- * Template for tree with three triangular prisms for foliage and a cylinderical
- * trunk.
- */
-function Tree() {
-
-    this.mesh = new THREE.Object3D();
-    var top = createCylinder( 1, 30, 30, 4, Colors.green, 0, 90, 0 );
-    var mid = createCylinder( 1, 40, 40, 4, Colors.green, 0, 70, 0 );
-    var bottom = createCylinder( 1, 50, 50, 4, Colors.green, 0, 40, 0 );
-    var trunk = createCylinder( 10, 10, 30, 32, Colors.brownDark, 0, 0, 0 );
-
-    this.mesh.add( top );
-    this.mesh.add( mid );
-    this.mesh.add( bottom );
-    this.mesh.add( trunk );
-
-    this.collidable = bottom;
-}
-
-/**
- * Creates tree according to specifications
- */
-function createTree(x, z, scale, rotation) {
-    var tree = new Tree();
-    trees.push(tree);
-    scene.add(tree.mesh);
-    tree.mesh.position.set( x, 0, z );
-    tree.mesh.scale.set( scale, scale, scale );
-    tree.mesh.rotation.y = rotation;
-    return tree;
-}
-
-/**
- * Template for fuel container
- */
-function Fuel() {
-    this.mesh = new THREE.Object3D();
-    this.berth = 100;
-
-    var slab = createBox( 50, 5, 50, Colors.brown, 0, 0, 0 );
-    var body = createBox( 20, 100, 15, Colors.red, 0, 0, 0 );
-    var leftArm = createBox( 3, 80, 10, Colors.red, 12.5, 0, 0 );
-    var rightArm = createBox( 3, 80, 10, Colors.red, -12.5, 0, 0 );
-    var frontWindow = createBox( 10, 10, 2, Colors.blue, 0, 35, 10 );
-    var backWindow = createBox( 10, 10, 2, Colors.blue, 0, 35, -10 );
-    var frontBox = createBox( 8, 8, 3, Colors.red, 0, 15, 10 );
-    var backBox = createBox( 8, 8, 3, Colors.red, 0, 15, -10 );
-    var head = createTire( 10, 10, 5, 32, Colors.red, 0, 60, 0 );
-    var headHighlight = createTire( 6, 6, 8, 32, Colors.golden, 0, 60, 0 );
-
-    var light = new THREE.PointLight( 0xffcc00, 1, 100 );
-    light.position.set( 0, 60, 0 );
-
-    this.mesh.add( slab );
-    this.mesh.add( body );
-    this.mesh.add( leftArm );
-    this.mesh.add( rightArm );
-    this.mesh.add( frontWindow );
-    this.mesh.add( backWindow );
-    this.mesh.add( frontBox );
-    this.mesh.add( backBox );
-    this.mesh.add( head );
-    this.mesh.add( headHighlight );
-    this.mesh.add( light );
-
-    this.collidable = slab;
-}
-
-function createFuel(x, z) {
-    fuel = new Fuel();
-    fuel.mesh.position.set( x, 0, z );
-    scene.add(fuel.mesh);
-
-    collidableFuels.push(fuel.collidable);
-}
-
-
-/**
  *
  * MECHANICS
  * ---------
@@ -467,10 +389,6 @@ function loop() {
 
 	// render the scene
 	renderer.render(scene, camera);
-	scene.rotation.y += 0.0025
-
-	// check global collisions
-    checkCollisions();
 
 	// call the loop function again
 	requestAnimationFrame(loop);
@@ -486,7 +404,22 @@ function createControls() {
         'keydown',
         function( ev ) {
             key = ev.keyCode;
+            /**
+             *
+             * STEP 2
+             * ------
+             * Create objects, namely ground and car.
+             */
 
+            // First version
+//            if (key == up) {
+//                car.mesh.position.y += 5;
+//            }
+//            if (key == down) {
+//                car.mesh.position.y -= 5;
+//            }
+
+            // Second version
             if (key == left) {
                 car.turnLeft();
             }
@@ -499,6 +432,8 @@ function createControls() {
             if (key == down) {
                 car.moveBackward();
             }
+
+            /********** End step 2 **********/
         }
     );
 
@@ -521,127 +456,6 @@ function createControls() {
             }
         }
     );
-}
-
-// https://stackoverflow.com/a/11480717/4855984 (doesn't work)
-function objectCollidedWith(object, collidableMeshList) {  // TODO: place elsewhere, dysfunctional
-    for (let child of object.children) {
-        var childPosition = child.position.clone();
-        for (var vertexIndex = 0; vertexIndex < child.geometry.vertices.length; vertexIndex++) {
-            var localVertex = child.geometry.vertices[vertexIndex].clone();
-            var globalVertex = localVertex.applyMatrix4(child.matrix);
-            var directionVector = child.position.sub( globalVertex );
-
-            var ray = new THREE.Raycaster( childPosition, directionVector.clone().normalize() );
-            var collisionResults = ray.intersectObjects( collidableMeshList );
-            if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-function checkCollisions() {
-    var scale, delay;
-
-    // mark victory and advance level
-    if (objectInBound(car.collidable, collidableFuels)) {
-        endLevel();
-    }
-}
-
-function objectInBound(object, objectList) { // TODO: annotate
-    o = get_xywh(object);
-    for (let target of objectList) {
-        t = get_xywh(target);
-        if ( (Math.abs(o.x - t.x) * 2 < t.w + o.w) && (Math.abs(o.y - t.y) * 2 < t.h + o.h)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function get_xywh(object) {  // TODO: annotate
-    var p = object.geometry.parameters;
-    var globalPosition = new THREE.Vector3( 0., 0., 0. );
-    object.getWorldPosition(globalPosition);
-    var x = globalPosition.x;
-    var y = globalPosition.z;
-    var w = p.width;
-    if (p.hasOwnProperty('radiusBottom')) {
-        w = Math.max(p.radiusTop, p.radiusBottom); // should be multiplied by 2?
-    }
-    var h = p.height;
-    return {'x': x, 'y': y, 'w': w, 'h': h};
-}
-
-/**
- *
- * LEVELS
- * ------
- * Logic for start and end of levels, including initialization of objects on
- * the map
- */
-
-function createLevel() {
-    createFuels();
-    createTrees();
-}
-
-function endLevel() {
-    endFuels();
-    endTrees();
-    setTimeout(createLevel, 2000);
-}
-
-function createTrees() { // TODO: find a home
-    var x, y, scale, rotate, delay;
-    for (var i = 0; i < numTrees; i++) {
-        x = Math.random() * 600 - 300;
-        z = Math.random() * 400 - 200;
-        scale = Math.random() * 1 + 0.5;
-        rotate = Math.random() * Math.PI * 2;
-        delay = 2000 * Math.random()
-
-        var treePosition = new THREE.Vector3( x, 0, z );
-        if (treePosition.distanceTo(car.mesh.position) < car.berth ||
-                treePosition.distanceTo(fuel.mesh.position) < fuel.berth) {
-            continue;
-        }
-        var tree = createTree(x, z, 0.01, rotate);
-
-        setTimeout(function(object, scale) {
-            startGrowth(object, 50, 10, scale);
-        }.bind(this, tree.mesh, scale), delay);
-
-        collidableTrees.push(tree.collidable);
-    }
-}
-
-function endTrees() {
-    for (let tree of trees) {
-        scale = tree.mesh.scale.x;
-        delay = delay = 2000 * Math.random();
-        setTimeout(function(object, scale) {
-            startShrink(object, 25, -10, scale);
-        }.bind(this, tree.mesh, scale), delay);
-    }
-    collidableTrees = [];
-    collidableFuels = [];
-    trees = [];
-}
-
-function createFuels() {
-    var x = Math.random() * 600 - 300;
-    var y = Math.random() * 400 - 200;
-    createFuel(x, y);
-    startGrowth(fuel.mesh, 50, 10, 1);
-}
-
-function endFuels() {
-    scale = fuel.mesh.scale.x;
-    startShrink( fuel.mesh, 25, -10, scale );
 }
 
 /**

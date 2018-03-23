@@ -40,9 +40,6 @@ var handleColor = Colors.brownDark;
 
 /********** End step 1 **********/
 
-// init();  // uncomment for JSFiddle, wraps code in onLoad eventListener
-window.addEventListener('load', init, false);
-
 function init() {
 	// set up the scene, the camera and the renderer
 	createScene();
@@ -356,3 +353,6 @@ function loop(){
 	// call the loop function again
 	requestAnimationFrame(loop);
 }
+
+// init();  // uncomment for JSFiddle, wraps code in onLoad eventListener
+window.addEventListener('load', init, false);

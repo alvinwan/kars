@@ -40,8 +40,6 @@ var handleColor = Colors.brownDark;
 
 /********** End step 1 **********/
 
-init();
-
 function init() {
 	// set up the scene, the camera and the renderer
 	createScene();
@@ -345,3 +343,5 @@ function loop(){
 	// call the loop function again
 	requestAnimationFrame(loop);
 }
+
+init();
