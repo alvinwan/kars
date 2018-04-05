@@ -614,21 +614,11 @@ function endLevel() {
 function resetGame() {
     car.reset();
 
-    // added in step 1
-    resetTimer();
+    // step 1: reset timer
 
-    // added in step 2
-    fuelLeft = 100;
+    // step 2: reset fuel amount
 
-    // added in step 3
-    if (score > record) {
-        record = score;
-        window.localStorage.setItem('record', record);
-    }
-    score = 0;
-
-    updateScoreDisplay();
-    updateRecordDisplay();
+    // step 3: check for record and set new record if score is higher
 }
 
 /**
@@ -643,31 +633,11 @@ var time;
 var timer;
 
 function startTimer() {
-    time = 10;
-    timer = setInterval(updateTimer, 1000);
-}
-
-function updateTimer() {
-    time -= 1;
-    updateTimeDisplay();
-
-    // Added in step 2
-    fuelLeft -= 5;
-    updateFuelDisplay();
-
-    if (time <= 0 || fuelLeft <= 0) {
-        alert('Game over');
-        resetGame();
-    }
-}
-
-function resetTimer() {
-    stopTimer();
-    startTimer();
+    // start the timer!
 }
 
 function stopTimer() {
-    clearInterval(timer);
+    // stop the timer!
 }
 
 /********** End step 1 **********/
@@ -677,18 +647,15 @@ function stopTimer() {
  * STEP 2
  * ------
  * Add fuel.
- * Make sure to update resetGame above.
+ * Make sure to update updateTimer, resetGame above.
  */
 
 var fuelLeft;
 
 function updateStatus() {
-    fuelLeft = Math.min(100, fuelLeft + 25);
-    updateFuelDisplay();
+    // update the fuel amount - beware it can't exceed 100!
 
-    // added in step 3
-    score += 1;
-    updateScoreDisplay();
+    // step 3: increment score
 }
 
 /********** End step 2 **********/
@@ -698,7 +665,7 @@ function updateStatus() {
  * STEP 3
  * ------
  * Add score and record!
- * Make sure to update resetGame above.
+ * Make sure to update updateStatus, resetGame above.
  */
 
 var score;

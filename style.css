@@ -92,8 +92,12 @@ h1 .byline {
     width:100%;
     float:left;
 }
-.entry + .entry {
+.entry:nth-child(even) {
     border-left:1px solid rgba(0,0,0,0.3);
+}
+
+.entry:nth-child(n+2) {
+    margin-top:1.5em;
 }
 
 .status {
