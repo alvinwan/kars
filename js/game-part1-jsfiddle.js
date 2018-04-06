@@ -312,12 +312,16 @@ function Car() {
         var is_moving = currentSpeed != 0;
         var is_turning = movement.left || movement.right;
         this.mesh.position.addScaledVector(direction, currentSpeed);
+        this.mesh.updateMatrixWorld();
 
-        // update speed according to acceleration
-        if (movement.forward) {
-            currentSpeed = Math.min(maxSpeed, currentSpeed + acceleration);
-        } else if (movement.backward) {
-            currentSpeed = Math.max(-maxSpeed, currentSpeed - acceleration);
+        // disallow travel through trees
+        if (objectInBound(this.collidable, collidableTrees) && is_moving) {
+            while (objectInBound(this.collidable, collidableTrees)) {
+                this.mesh.position.addScaledVector(direction, -currentSpeed);
+                this.mesh.updateMatrixWorld();
+            }
+            currentSpeed = 0;
+            is_moving = false;
         }
 
         // update current position based on speed

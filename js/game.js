@@ -311,10 +311,14 @@ function Car() {
         var is_moving = currentSpeed != 0;
         var is_turning = movement.left || movement.right;
         this.mesh.position.addScaledVector(direction, currentSpeed);
+        this.mesh.updateMatrixWorld();
 
         // disallow travel through trees
         if (objectInBound(this.collidable, collidableTrees) && is_moving) {
-            this.mesh.position.addScaledVector(direction, -3 * currentSpeed);
+            while (objectInBound(this.collidable, collidableTrees)) {
+                this.mesh.position.addScaledVector(direction, -currentSpeed);
+                this.mesh.updateMatrixWorld();
+            }
             currentSpeed = 0;
             is_moving = false;
         }
@@ -566,6 +570,7 @@ function objectInBound(object, objectList) { // TODO: annotate
     for (let target of objectList) {
         t = get_xywh(target);
         if ( (Math.abs(o.x - t.x) * 2 < t.w + o.w) && (Math.abs(o.y - t.y) * 2 < t.h + o.h)) {
+            console.log(o)
             return true;
         }
     }

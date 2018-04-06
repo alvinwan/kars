@@ -311,10 +311,14 @@ function Car() {
         var is_moving = currentSpeed != 0;
         var is_turning = movement.left || movement.right;
         this.mesh.position.addScaledVector(direction, currentSpeed);
+        this.mesh.updateMatrixWorld();
 
         // disallow travel through trees
         if (objectInBound(this.collidable, collidableTrees) && is_moving) {
-            this.mesh.position.addScaledVector(direction, -3 * currentSpeed);
+            while (objectInBound(this.collidable, collidableTrees)) {
+                this.mesh.position.addScaledVector(direction, -currentSpeed);
+                this.mesh.updateMatrixWorld();
+            }
             currentSpeed = 0;
             is_moving = false;
         }
