@@ -639,11 +639,11 @@ function resetGame() {
  * Make sure to update resetGame above.
  */
 
-var time;
+var time = 15;
 var timer;
 
 function startTimer() {
-    time = 10;
+    time += 10;
     timer = setInterval(updateTimer, 1000);
 }
 
