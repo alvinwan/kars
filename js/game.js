@@ -100,6 +100,8 @@ function createScene() {
 	camera.position.set( 0, 400, 400 );
     camera.lookAt( 0, 0, 0 );
 
+        var controls = new THREE.OrbitControls( camera );
+
 	// Create the renderer
 	renderer = new THREE.WebGLRenderer({
 		// Allow transparency to show the gradient background
@@ -186,7 +188,7 @@ function createLights() {
  * -------
  * Definitions and constructors for car, fuel, tree, ground
  */
-var car, fuel, ground, trees = [], collidableTrees = [], numTrees = 10,
+var car, fuel, ground, trees = [], collidableTrees = [], numTrees = 20,
     collidableFuels = [];
 
 /**
@@ -362,12 +364,12 @@ function Car() {
     this.collidable = body;
 
     this.reset = function() {
-        car.mesh.position.set( -300, 25, -150);
+        car.mesh.position.set( -100, 25, 100);
         direction = new THREE.Vector3(1., 0., 0.);
         currentSpeed = 0;
         movement['forward'] = movement['backward'] = false
         movement['left'] = movement['right'] = false
-        car.mesh.rotation.y = 0;
+        car.mesh.rotation.y = -0.5;
     }
 }
 
@@ -383,7 +385,7 @@ function createCar() {
  * Create simple green, rectangular ground
  */
 function createGround() {
-    ground = createBox( 800, 20, 500, Colors.greenDark, 0, -10, 0 );
+    ground = createBox( 400, 20, 400, Colors.greenDark, 0, -10, 0 );
     scene.add(ground);
 }
 
@@ -482,7 +484,7 @@ function loop() {
 
 	// render the scene
 	renderer.render(scene, camera);
-	scene.rotation.y += 0.0025
+//	scene.rotation.y += 0.0025
 
 	// check global collisions
     checkCollisions();
@@ -661,8 +663,8 @@ function updateTimer() {
     updateFuelDisplay();
 
     if (time <= 0 || fuelLeft <= 0) {
-        alert('Game over');
-        resetGame();
+        //alert('Game over');
+        //resetGame();
     }
 }
 
@@ -730,8 +732,8 @@ function updateRecordDisplay() {
 function createTrees() { // TODO: find a home
     var x, y, scale, rotate, delay;
     for (var i = 0; i < numTrees; i++) {
-        x = Math.random() * 600 - 300;
-        z = Math.random() * 400 - 200;
+        x = Math.random() * 300 - 150;
+        z = Math.random() * 200 - 100;
         scale = Math.random() * 1 + 0.5;
         rotate = Math.random() * Math.PI * 2;
         delay = 2000 * Math.random()
@@ -765,8 +767,8 @@ function endTrees() {
 }
 
 function createFuels() {
-    var x = Math.random() * 600 - 300;
-    var y = Math.random() * 400 - 200;
+    var x = Math.random() * 300 - 150;
+    var y = Math.random() * 200 - 100;
     createFuel(x, y);
     startGrowth(fuel.mesh, 50, 10, 1);
 }
